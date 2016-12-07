@@ -1,2 +1,6 @@
 #ignore build files
-cmake-build-debug/ 
+cmake*/
+#ignore all txt files
+*.txt
+#igonre all archives and object files
+*.[oa]

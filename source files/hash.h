@@ -2,6 +2,7 @@
 #define __HASH_H__
 
 #define endRecord '$'
+#define filedSeperator '|'
 
 typedef struct Record {
 	int id;

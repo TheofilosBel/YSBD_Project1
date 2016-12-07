@@ -76,10 +76,10 @@ int main(int argc, char **argv) {
     // strcpy(attrName, "id");
     // char attrType = 'i';
     create_Index(fileName, attrName, attrType, buckets);
-    /*
+
     // -- open index
     info = open_Index(fileName);
-
+    /*
     // -- insert entries
     insert_Entries(info);
 

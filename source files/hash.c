@@ -24,41 +24,45 @@ int HT_CreateIndex( char *fileName, char attrType, char* attrName, int attrLengt
     void *block;
 
     /* malloc enough space for HInfo (<512b)*/
-    write2block = malloc((sizeof(char)*(strlen(attrName)+1+1))
+    write2block = malloc((sizeof(char)*(strlen(attrName)+1+1+1+1+1))
                          + sizeof(char)*lengthOfNumber(attrLength)
                          + sizeof(char)*lengthOfNumber(buckets));
 
     /*make new BF file , and in the first block write the HT info*/
-    if ((return_value = BF_CreateFile(fileName)) != 0 )
-    {
+    if ((return_value = BF_CreateFile(fileName)) != 0 ) {
         BF_PrintError("Error at CreateIndex, when creating file :");
         exit(return_value);
     }
-    if ((file_desc = BF_OpenFile(fileName)) < 0)
-    {
+    if ((file_desc = BF_OpenFile(fileName)) < 0) {
         BF_PrintError("Error at CreateIndex, when opening file");
         exit(file_desc);
     }
     /* allocate a block to write the HT info */
-    if ((return_value = BF_AllocateBlock(file_desc)) < 0)
-    {
+    if ((return_value = BF_AllocateBlock(file_desc)) < 0) {
         BF_PrintError("Error allocating block");
         exit(return_value);
     }
-    /* Read block*/
+    /* Read block with num 0*/
     if ((return_value = BF_ReadBlock(file_desc, 0, &block)) < 0) {
         BF_PrintError("Error at CreateIndex, when getting block");
         exit(return_value);
     }
-    /* write the HT info to block*/
-    sprintf(write2block,"%c%s%d%d%c", attrType, attrName, attrLength, buckets, endRecord);
-    strcpy(block, write2block);
+    /* write the HT info to block [Fromat : typename length buckets]*/
+    sprintf(write2block,"%c%s %d %d%c", attrType, attrName,
+                                attrLength, buckets, endRecord);
+    strncpy(block, write2block, sizeof(char)*(strlen(write2block)+1));
     fprintf(stderr,"Block has inside : %s\n", block);
-    /* write back to BF file the block with num 0*/
+    /* write back to BF file the block with num 0 and close it*/
     if ((return_value = BF_WriteBlock(file_desc, 0)) < 0){
         BF_PrintError("Error at CreateIndex, when writing block back");
         exit(return_value);
     }
+    if ((return_value = BF_CloseFile(file_desc)) < 0) {
+        BF_PrintError("Error at CreateIndex, when closing file");
+        exit(return_value);
+    }
+
+    free(write2block);
     /*Exit with succsess*/
     return 0;
     
@@ -66,9 +70,43 @@ int HT_CreateIndex( char *fileName, char attrType, char* attrName, int attrLengt
 
 
 HT_info* HT_OpenIndex(char *fileName) {
-    /* Add your code here */
+    int return_value = 0, file_desc;
+    void *block;
+    char *buffer;
+    HT_info *hash_info_ptr ;
 
-    return NULL;
+    /*malloc space for HasInfo struct*/
+    hash_info_ptr = malloc(sizeof(HT_info));
+    buffer = malloc(20*sizeof(char));  // maximum size in hash.h record is surname with size 20
+
+    /*Open BF file*/
+    if ((file_desc = BF_OpenFile(fileName)) < 0) {
+        BF_PrintError("Error at OpenIndex, when opening file");
+        exit(file_desc);
+    }
+    /* Read block with num 0*/
+    if ((return_value = BF_ReadBlock(file_desc, 0, &block)) < 0) {
+        BF_PrintError("Error at OpenIndex, when getting block");
+        exit(return_value);
+    }
+    /* Take info's from block 0*/
+    sscanf(block, "%c%s %d %d$", &(hash_info_ptr->attrType), buffer,
+           &(hash_info_ptr->attrLength), &(hash_info_ptr->numBuckets) );
+    hash_info_ptr->fileDesc = file_desc;
+    hash_info_ptr->numBFiles = 1;
+    hash_info_ptr->attrName = malloc(hash_info_ptr->attrLength*sizeof(char));
+    strcpy(hash_info_ptr->attrName, buffer);
+
+    fprintf(stderr, "%c|%s|%d|%d$\n", hash_info_ptr->attrType, hash_info_ptr->attrName,
+            hash_info_ptr->attrLength, hash_info_ptr->numBuckets );
+    /*Close the file*/
+    if ((return_value = BF_CloseFile(file_desc) < 0)) {
+        BF_PrintError("Error at CreateIndex, when closing file");
+        exit(return_value);
+    }
+
+    free(buffer);
+    return hash_info_ptr;
     
 } 
 

@@ -77,17 +77,17 @@ HT_info* HT_OpenIndex(char *fileName) {
 
     /*malloc space for HasInfo struct*/
     hash_info_ptr = malloc(sizeof(HT_info));
-    buffer = malloc(20*sizeof(char));  // maximum size in hash.h record is surname with size 20
+    buffer = malloc(25*sizeof(char));  // maximum size in hash.h record is surname with size 20
 
     /*Open BF file*/
     if ((file_desc = BF_OpenFile(fileName)) < 0) {
         BF_PrintError("Error at OpenIndex, when opening file");
-        exit(file_desc);
+        exit(NULL);
     }
     /* Read block with num 0*/
-    if ((return_value = BF_ReadBlock(file_desc, 0, &block)) < 0) {
+    if (BF_ReadBlock(file_desc, 0, &block) < 0) {
         BF_PrintError("Error at OpenIndex, when getting block");
-        exit(return_value);
+        exit(NULL);
     }
     /* Take info's from block 0*/
     sscanf(block, "%c%s %d %d$", &(hash_info_ptr->attrType), buffer,
@@ -100,9 +100,9 @@ HT_info* HT_OpenIndex(char *fileName) {
     fprintf(stderr, "%c|%s|%d|%d$\n", hash_info_ptr->attrType, hash_info_ptr->attrName,
             hash_info_ptr->attrLength, hash_info_ptr->numBuckets );
     /*Close the file*/
-    if ((return_value = BF_CloseFile(file_desc) < 0)) {
+    if (BF_CloseFile(file_desc) < 0) {
         BF_PrintError("Error at CreateIndex, when closing file");
-        exit(return_value);
+        exit(NULL);
     }
 
     free(buffer);
@@ -112,7 +112,8 @@ HT_info* HT_OpenIndex(char *fileName) {
 
 
 int HT_CloseIndex( HT_info* header_info ) {
-    /* Add your code here */
+
+
     
     return -1;
     

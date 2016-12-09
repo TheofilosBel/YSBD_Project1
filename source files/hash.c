@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Added this comment */
+
 int lengthOfNumber(const int x)
 {
     if(x>=1000000000) return 10;

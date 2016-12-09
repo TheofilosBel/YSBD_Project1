@@ -19,14 +19,11 @@ int lengthOfNumber(const int x)
 }
 
 int HT_CreateIndex( char *fileName, char attrType, char* attrName, int attrLength, int buckets) {
-    int return_value = 0, file_desc = 0, j, bytes_of_block0 = 0, offset, *leng;
+    int return_value = 0, file_desc = 0, j, bytes_of_block0 = 0, offset;
     void *block;
     char end_Record = endRecord;
 
     /* malloc enough space for HInfo (<512b)*/
-    leng = malloc(sizeof(int));
-    memcpy(leng, &attrLength, sizeof(int));
-    printf("Mem %d %d", *leng, attrLength);
 
     bytes_of_block0 = 0;
     /*make new BF file , and in the first block write the HT info*/
@@ -58,18 +55,18 @@ int HT_CreateIndex( char *fileName, char attrType, char* attrName, int attrLengt
     memcpy(block, &attrType, sizeof(char));
     offset += sizeof(char);
     printf("Block now is %p\n", block);
-    memcpy(block + offset, attrName, sizeof(char)*(attrLength+1));
+    memcpy((block + offset), attrName, sizeof(char)*(attrLength+1));
     offset += sizeof(char)*(attrLength+1);
     printf("Block now is %p\n", block);
     memcpy((block + offset), &attrLength, sizeof(int));
-    printf("Block now is %p and we added %d and offset is %d\n", block, block+offset, offset);
+    printf("Block now is %p and we added %d and offset is %d\n", block, *(int*)(block+offset), offset);
     offset += sizeof(int);
     memcpy((block + offset), &buckets, sizeof(int));
+    printf("Block now is %p and we added %d and offset is %d\n", block, *(int*)(block+offset), offset);
     offset += sizeof(int);
-    printf("Block now is %p\n", block);
-    memcpy(block + offset, &end_Record, sizeof(char));
+    memcpy((block + offset), &end_Record, sizeof(char));
+    printf("Block now is %p and we added %c and offset is %d\n", block, *(char*)(block+offset), offset);
     offset += sizeof(char);
-    printf("Block now is %p and length %d\n", block, offset);
     fflush(stdout);
 
     fprintf(stderr,"Block has inside : %s\n", block);
@@ -89,7 +86,7 @@ int HT_CreateIndex( char *fileName, char attrType, char* attrName, int attrLengt
 
 
 HT_info* HT_OpenIndex(char *fileName) {
-    int file_desc;
+    int file_desc, offset;
     void *block;
     char *buffer;
     HT_info *hash_info_ptr ;
@@ -109,12 +106,13 @@ HT_info* HT_OpenIndex(char *fileName) {
         return NULL;
     }
     /* Take info's from block 0*/
-    sscanf(block, "%c%s%d%d$", &(hash_info_ptr->attrType), buffer,
-           &(hash_info_ptr->attrLength), &(hash_info_ptr->numBuckets) );
+    sscanf(block, "%c%s$", &(hash_info_ptr->attrType), buffer);
     hash_info_ptr->fileDesc = file_desc;
     hash_info_ptr->numBFiles = 1;
-    hash_info_ptr->attrName = malloc(hash_info_ptr->attrLength*sizeof(char));
+    hash_info_ptr->attrName = malloc((strlen(buffer)+1)*sizeof(char));
     strcpy(hash_info_ptr->attrName, buffer);
+    offset = sizeof(char)*(1+strlen(buffer)+1) ;
+    sscanf(block+offset,"%d%d$", &(hash_info_ptr->attrLength), &(hash_info_ptr->numBuckets));
 
     fprintf(stderr, "Block in open :%c|%s|%d|%d$\n", hash_info_ptr->attrType, hash_info_ptr->attrName,
             hash_info_ptr->attrLength, hash_info_ptr->numBuckets );

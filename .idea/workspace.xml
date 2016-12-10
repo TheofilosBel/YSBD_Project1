@@ -12,9 +12,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d372f712-efed-4535-899d-23c71fe9a8d1" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/HT_hashFile" afterPath="$PROJECT_DIR$/source files/HT_hashFile" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/execHT" afterPath="$PROJECT_DIR$/source files/execHT" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/hash.c" afterPath="$PROJECT_DIR$/source files/hash.c" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -65,8 +63,8 @@
       <file leaf-file-name="hash.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/source files/hash.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="316">
-              <caret line="74" column="39" lean-forward="false" selection-start-line="74" selection-start-column="39" selection-end-line="74" selection-end-column="39" />
+            <state relative-caret-position="1548">
+              <caret line="86" column="25" lean-forward="true" selection-start-line="86" selection-start-column="25" selection-end-line="86" selection-end-column="25" />
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
               </folding>
@@ -428,12 +426,12 @@
       <workItem from="1481096924132" duration="15156000" />
       <workItem from="1481115298678" duration="9567000" />
       <workItem from="1481271761755" duration="8306000" />
-      <workItem from="1481358304462" duration="5604000" />
+      <workItem from="1481358304462" duration="6159000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="40873000" />
+    <option name="totallyTimeSpent" value="41428000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="24" width="1920" height="1056" extended-state="6" />
@@ -869,8 +867,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/source files/hash.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="316">
-          <caret line="74" column="39" lean-forward="false" selection-start-line="74" selection-start-column="39" selection-end-line="74" selection-end-column="39" />
+        <state relative-caret-position="1548">
+          <caret line="86" column="25" lean-forward="true" selection-start-line="86" selection-start-column="25" selection-end-line="86" selection-end-column="25" />
           <folding>
             <element signature="e#0#27#0" expanded="true" />
           </folding>

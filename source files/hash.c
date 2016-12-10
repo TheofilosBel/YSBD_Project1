@@ -20,16 +20,12 @@ int lengthOfNumber(const int x) {
 
 
 int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength, int buckets) {
-    int returnValue = 0; /* Return value of functions - Used to print errors */
     int fileDesc = 0;
-    int offset;          /* We need the offset to find in which byte to write to block */
     int j;
     void *block;
-    char endRecord = END_RECORD;
-    char fieldSeparator = FIELD_SEPARATOR;
 
     /* Make new BF file and write the HT info in the first block */
-    if ((returnValue = BF_CreateFile(fileName)) < 0 ) {
+    if (BF_CreateFile(fileName) < 0 ) {
         BF_PrintError("Error at CreateIndex, when creating file: ");
         return -1;
 
@@ -39,7 +35,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         return -1;
     }
 
-    for (j = 0; j <= buckets; j++) { /* We need buckets+1 blocks. Block 0 is the Info block */
+    for (j = 0; j <= buckets+1; j++) { /* We need buckets+1 blocks. Block 0 is the Info block */
         /* Allocate a block for the hash table */
         if (BF_AllocateBlock(fileDesc) < 0) {
             BF_PrintError("Error allocating block: ");
@@ -48,7 +44,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     }
 
     /* Read block with num 0 */
-    if ((returnValue = BF_ReadBlock(fileDesc, 0, &block)) < 0) {
+    if (BF_ReadBlock(fileDesc, 0, &block) < 0) {
         BF_PrintError("Error at CreateIndex, when getting block: ");
         return -1;
     }
@@ -60,42 +56,11 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     char buf[256];
     sprintf(buf, "%c|%s|%d|%d$", attrType, attrName, attrLength, buckets);
     memcpy(block, buf, sizeof(buf));
-    /*
-    offset = 0;
-    memcpy(block, &attrType, sizeof(char));
-    offset += sizeof(char);
 
-    memcpy(block + offset, &fieldSeparator, sizeof(char));
-    offset += sizeof(char);
-
-    memcpy(block + offset, attrName, sizeof(char)*(attrLength+1));
-
-    offset += sizeof(char)*(attrLength+1);
-    memcpy(block + offset, &fieldSeparator, sizeof(char));
-    offset += sizeof(char);
-
-    memcpy((block + offset), &attrLength, sizeof(int));
-
-
-    offset += sizeof(int);
-    memcpy(block + offset, &fieldSeparator, sizeof(char));
-    offset += sizeof(char);
-
-    memcpy((block + offset), &buckets, sizeof(int));
-    printf("Block now is %p and we added %d and offset is %d\n", block, *(int*)(block+offset), offset);
-    offset += sizeof(int);
-
-    memcpy(block + offset, &endRecord, sizeof(char));
-    offset += sizeof(char);
-    */
     /* Write the block with num 0 back to BF file and close it */
-    if ((returnValue = BF_WriteBlock(fileDesc, 0)) < 0){
+    if (BF_WriteBlock(fileDesc, 0) < 0){
 
         BF_PrintError("Error at CreateIndex, when writing block back");
-        return -1;
-    }
-    if ((returnValue = BF_CloseFile(fileDesc)) < 0) {
-        BF_PrintError("Error at CreateIndex, when closing file");
         return -1;
     }
 
@@ -154,22 +119,10 @@ HT_info* HT_OpenIndex(char *fileName) {
     pch = strtok(NULL, "$");
     sscanf(pch, "%d", &(hash_info_ptr->numBuckets));
 
-    printf("%c\n%s\n%d\n%d\n", hash_info_ptr->attrType, buffer, hash_info_ptr->attrLength, hash_info_ptr->numBuckets);
-
     hash_info_ptr->fileDesc = fileDesc;
     hash_info_ptr->numBFiles = 1;
     hash_info_ptr->attrName = malloc((hash_info_ptr->attrLength +1) * sizeof(char));
     strcpy(hash_info_ptr->attrName, buffer);
-    
-
-    fprintf(stderr, "Block in open :%c|%s|%d|%d$\n", hash_info_ptr->attrType, hash_info_ptr->attrName,
-            hash_info_ptr->attrLength, hash_info_ptr->numBuckets );
-
-    /* Close the file */
-    if (BF_CloseFile(fileDesc) < 0) {
-        BF_PrintError("Error at CreateIndex, when closing file: ");
-        return NULL;
-    }
 
     free(buffer);
     return hash_info_ptr;

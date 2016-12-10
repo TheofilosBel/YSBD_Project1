@@ -6,6 +6,12 @@
 /* '|' is used to separate the fields inside a record */
 #define FIELD_SEPARATOR '|'
 
+
+typedef struct BlockInfo {
+    int containedRecords;
+    int nextOverflowBlock;
+} BlockInfo;
+
 typedef struct Record {
 	int id;
 	char name[15];

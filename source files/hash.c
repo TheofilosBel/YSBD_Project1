@@ -131,13 +131,13 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     int numWriten = 0;
     BlockInfo *blockInfo;
 
-    if ((blockInfo = malloc(sizeof(blockInfo))) == NULL ){
+    if ((blockInfo = malloc(sizeof(BlockInfo))) == NULL ){
         fprintf(stderr,"Not enough memory\n");
         return -1;
     }
 
     /* We first write the BlockInfo struct , then the nums*/
-    offset += sizeof(blockInfo);
+    offset += sizeof(BlockInfo);
     for (j = 0; j < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && j < buckets ; j++){  // Write the inecies for blocks
         num = 2 + j;  // Block 2 is the first block for records
         memcpy(block+offset, &num, sizeof(int));
@@ -175,7 +175,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         }
 
         /* Write to overflow block */
-        offset = 0 + sizeof(blockInfo);
+        offset = 0 + sizeof(BlockInfo);
         for (i = 0; i < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && i < buckets - numWriten ; i++){  // Write the inecies for blocks
             num = numWriten + 1 + i;  // Block 2 is the first block for records
             memcpy(block+offset, &num, sizeof(int));

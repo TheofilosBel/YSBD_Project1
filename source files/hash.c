@@ -165,9 +165,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
 
 
 HT_info* HT_OpenIndex(char *fileName) {
-
     int fileDesc;
-
     void *block;
     char *buffer;
     char *pch; /* Used with strtok() */
@@ -225,12 +223,17 @@ HT_info* HT_OpenIndex(char *fileName) {
 } 
 
 
-int HT_CloseIndex( HT_info* header_info ) {
+int HT_CloseIndex(HT_info* header_info) {
+    if (BF_CloseFile(header_info->fileDesc) < 0) {
+        BF_PrintError("Error at CloseIndex, when closing file: \n");
+        return -1;
+    }
 
+    free(header_info->attrName);
+    free(header_info);
 
-    
-    return -1;
-    
+    printf("Closed success\n");
+    return 0;
 }
 
 int HT_InsertEntry(HT_info header_info, Record record) {

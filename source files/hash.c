@@ -175,7 +175,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         }
 
         /* Write to overflow block */
-        offset += sizeof(blockInfo);
+        offset = 0 + sizeof(blockInfo);
         for (i = 0; i < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && i < buckets - numWriten ; i++){  // Write the inecies for blocks
             num = numWriten + 1 + i;  // Block 2 is the first block for records
             memcpy(block+offset, &num, sizeof(int));

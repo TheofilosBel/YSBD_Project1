@@ -12,6 +12,9 @@ typedef struct BlockInfo {
     int nextOverflowBlock;
 } BlockInfo;
 
+int* Block_ReadInt(void *);
+
+
 typedef struct Record {
 	int id;
 	char name[15];

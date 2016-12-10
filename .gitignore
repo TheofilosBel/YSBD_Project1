@@ -4,3 +4,5 @@ cmake*/
 *.txt
 #igonre all archives and object files
 *.[oa]
+#igniore all makefiles
+Makefile

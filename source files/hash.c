@@ -18,6 +18,7 @@ int lengthOfNumber(const int x) {
     return 1;
 }
 
+
 int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength, int buckets) {
     int returnValue = 0; /* Return value of functions - Used to print errors */
     int fileDesc = 0;
@@ -31,6 +32,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     if ((returnValue = BF_CreateFile(fileName)) < 0 ) {
         BF_PrintError("Error at CreateIndex, when creating file: ");
         return -1;
+
     }
     if ((fileDesc = BF_OpenFile(fileName)) < 0) {
         BF_PrintError("Error at CreateIndex, when opening file: ");
@@ -62,26 +64,33 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     offset = 0;
     memcpy(block, &attrType, sizeof(char));
     offset += sizeof(char);
+
     memcpy(block + offset, &fieldSeparator, sizeof(char));
     offset += sizeof(char);
 
     memcpy(block + offset, attrName, sizeof(char)*(attrLength+1));
+
     offset += sizeof(char)*(attrLength+1);
     memcpy(block + offset, &fieldSeparator, sizeof(char));
     offset += sizeof(char);
 
     memcpy((block + offset), &attrLength, sizeof(int));
+
+
     offset += sizeof(int);
     memcpy(block + offset, &fieldSeparator, sizeof(char));
     offset += sizeof(char);
 
     memcpy((block + offset), &buckets, sizeof(int));
+    printf("Block now is %p and we added %d and offset is %d\n", block, *(int*)(block+offset), offset);
     offset += sizeof(int);
+
     memcpy(block + offset, &endRecord, sizeof(char));
     offset += sizeof(char);
     */
     /* Write the block with num 0 back to BF file and close it */
     if ((returnValue = BF_WriteBlock(fileDesc, 0)) < 0){
+
         BF_PrintError("Error at CreateIndex, when writing block back");
         return -1;
     }
@@ -95,7 +104,9 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
 
 
 HT_info* HT_OpenIndex(char *fileName) {
+
     int fileDesc;
+
     void *block;
     char *buffer;
     char *pch; /* Used with strtok() */
@@ -150,6 +161,7 @@ HT_info* HT_OpenIndex(char *fileName) {
     hash_info_ptr->attrName = malloc((hash_info_ptr->attrLength +1) * sizeof(char));
     strcpy(hash_info_ptr->attrName, buffer);
     
+
     fprintf(stderr, "Block in open :%c|%s|%d|%d$\n", hash_info_ptr->attrType, hash_info_ptr->attrName,
             hash_info_ptr->attrLength, hash_info_ptr->numBuckets );
 

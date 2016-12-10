@@ -12,15 +12,20 @@ typedef struct BlockInfo {
     int nextOverflowBlock;
 } BlockInfo;
 
-int* Block_ReadInt(void *);
-
-
 typedef struct Record {
 	int id;
 	char name[15];
 	char surname[20];
 	char city[25];
 } Record;
+
+/* Record Functions */
+void printRecord(Record* recordptr);
+
+/* Block Functions */
+int* Block_ReadInts(void *blockptr, int numToRead);
+Record* Block_ReadRecords(void *blockptr, int numToRead);
+
 
 /* Η συνάρτηση HT_CreateIndex χρησιμοποιείται για τη δημιουργία και κατάλληλη αρχικοποίηση ενός 
 άδειου αρχείου κατακερματισμού με όνομα fileName. Σε περίπτωση που εκτελεστεί επιτυχώς, 

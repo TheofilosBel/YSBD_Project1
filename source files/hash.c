@@ -4,6 +4,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int* Block_ReadInts(void *blockptr, int numToRead){
+    int *intptr = (int *)blockptr;  // Cast void* to int*
+    int *arrayOfInts;
+    int j = 0;
+
+    /* Read integers from block*/
+    arrayOfInts = malloc(sizeof(int)*numToRead);
+    for (j = 0; j < numToRead; j++){
+        printf("The int is %d", *(intptr+j));
+        memcpy(&arrayOfInts[j], (intptr+j), sizeof(int));
+    }
+    return arrayOfInts;
+}
+
+Record* Block_ReadRecords(void *blockptr, int numToRead){
+    Record *recordptr = (int *)blockptr;  // Cast void* to int*
+    Record *arrayOfRecords;
+    int j = 0;
+
+    /* Read integers from block*/
+    arrayOfRecords = malloc(sizeof(int)*numToRead);
+    for (j = 0; j < numToRead; j++){
+        , *(recordptr+j));
+        memcpy(&arrayOfRecords[j], (recordptr+j), sizeof(int));
+    }
+    return arrayOfRecords;
+}
+
+
+
+
 void printDebug(int fileDesc) {
     BlockInfo tempInfo;
     void *block;

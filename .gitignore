@@ -1,0 +1,8 @@
+#ignore build files
+cmake*/
+#ignore all txt files
+*.txt
+#igonre all archives and object files
+*.[oa]
+#igniore all makefiles
+Makefile

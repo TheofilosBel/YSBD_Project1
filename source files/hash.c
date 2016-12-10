@@ -85,12 +85,16 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     int num = 0;
     int numWriten = 0;
     BlockInfo *blockInfo;
-    blockInfo = malloc(sizeof(blockInfo));
+
+    if ((blockInfo = malloc(sizeof(blockInfo))) == NULL ){
+        fprintf(stderr,"Not enough memory\n");
+        return -1;
+    }
 
     /* Update block info struct */
     blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
     if (hashTableBlocks > 1){
-        blockInfo->nextOverflowBlock = buckets + 1 + 1;
+        blockInfo->nextOverflowBlock = BF_GetBlockCounter(fileDesc);
         blockInfo->containedRecords = 0;
     }
     memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
@@ -145,20 +149,6 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         }
     }
     free(blockInfo);
-
-    /*
-     * Write the HT info to block in the following format:
-     * attrType|attrName|attrLength|buckets$
-     */
-    sprintf(buf, "%c|%s|%d|%d$", attrType, attrName, attrLength, buckets);
-    memcpy(block, buf, sizeof(buf));
-
-    /* Write the block with num 0 back to BF file and close it */
-    if (BF_WriteBlock(fileDesc, 0) < 0){
-
-        BF_PrintError("Error at CreateIndex, when writing block back");
-        return -1;
-    }
 
     return 0;
 }

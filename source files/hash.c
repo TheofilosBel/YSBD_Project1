@@ -4,6 +4,51 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void printDebug(int fileDesc) {
+    BlockInfo tempInfo;
+    void *block;
+    int temp, offset = 0, block_num = 1;
+
+    /* Read block with num 1 */
+    if (BF_ReadBlock(fileDesc, block_num, &block) < 0) {
+        BF_PrintError("Error at printDebug, when getting block: ");
+        return;
+    }
+
+    printf("Block %d: \n", block_num);
+    memcpy(&tempInfo, block, sizeof(BlockInfo));
+    printf("bytesInBlock%d = %d\nnextOverflowBlock = %d\n", block_num, tempInfo.bytesInBlock, tempInfo.nextOverflowBlock);
+    offset += sizeof(BlockInfo);
+
+    while (offset < BLOCK_SIZE) {
+        memcpy(&temp, block + offset, sizeof(int));
+        offset += sizeof(int);
+        printf("%d\n", temp);
+    }
+
+    while (tempInfo.nextOverflowBlock != -1) {
+        block_num = tempInfo.nextOverflowBlock;
+
+        /* Read next block */
+        if (BF_ReadBlock(fileDesc, block_num, &block) < 0) {
+            BF_PrintError("Error at printDebug, when getting block: ");
+            return;
+        }
+
+        printf("\nBlock %d\n", block_num);
+        offset = 0;
+        memcpy(&tempInfo, block, sizeof(BlockInfo));
+        printf("bytesInBlock%d = %d\nnextOverflowBlock = %d\n", block_num, tempInfo.bytesInBlock, tempInfo.nextOverflowBlock);
+        offset += sizeof(BlockInfo);
+
+        while (offset < BLOCK_SIZE) {
+            memcpy(&temp, block + offset, sizeof(int));
+            offset += sizeof(int);
+            printf("%d\n", temp);
+        }
+    }
+}
+
 /* Computes and returns the length of an integer */
 int lengthOfNumber(const int x) {
     if(x>=1000000000) return 10;
@@ -21,7 +66,7 @@ int lengthOfNumber(const int x) {
 
 int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength, int buckets) {
     int fileDesc = 0;
-    int j;
+    int i, j;
     int blockCounter = 0;
     int hashTableBlocks = 0;
     void *block;
@@ -45,7 +90,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
             return -1;  //what will happen here ????
         }
     }
-    printf("Block counter is %d", BF_GetBlockCounter(fileDesc));
+    //printf("Block counter is %d", BF_GetBlockCounter(fileDesc));
 
     /* Read block with num 0 */
     if (BF_ReadBlock(fileDesc, 0, &block) < 0) {
@@ -72,7 +117,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     if (((buckets*sizeof(int) + sizeof(BlockInfo)) % BLOCK_SIZE) != 0 ) {  // if we have mod != 0 add 1 more block
         hashTableBlocks += 1;
     }
-    printf("We need : %d for hash table\n", hashTableBlocks);
+    //printf("We need : %d for hash table\n", hashTableBlocks);
 
     /* Read block with num 1 */
     if (BF_ReadBlock(fileDesc, 1, &block) < 0) {
@@ -105,7 +150,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     if (hashTableBlocks > 1){
         blockInfo->nextOverflowBlock = BF_GetBlockCounter(fileDesc);
     }
-    printf("Bloxck info %d", blockInfo->bytesInBlock);
+    //printf("Bloxck info %d", blockInfo->bytesInBlock);
     memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
 
     /* Write back block 1 */
@@ -131,8 +176,8 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
 
         /* Write to overflow block */
         offset += sizeof(blockInfo);
-        for (j = 0; j < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && j < buckets - numWriten ; j++){  // Write the inecies for blocks
-            num = numWriten + 1 + j;  // Block 2 is the first block for records
+        for (i = 0; i < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && i < buckets - numWriten ; i++){  // Write the inecies for blocks
+            num = numWriten + 1 + i;  // Block 2 is the first block for records
             memcpy(block+offset, &num, sizeof(int));
             offset += sizeof(int);
             numWritenInloop ++;
@@ -146,7 +191,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
             blockInfo->nextOverflowBlock = blockCounter + 1;
         }
         memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
-        printf("Bloxck info %d", blockInfo->bytesInBlock);
+        //printf("Bloxck info %d", blockInfo->bytesInBlock);
 
         /* Write back overflow block */
         if (BF_WriteBlock(fileDesc, blockCounter-1) < 0){
@@ -155,6 +200,8 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         }
     }
     free(blockInfo);
+
+    printDebug(fileDesc);
 
     return 0;
 }

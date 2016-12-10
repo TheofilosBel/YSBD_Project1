@@ -91,14 +91,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         return -1;
     }
 
-    /* Update block info struct */
-    blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
-    blockInfo->bytesInBlock = 0;
-    if (hashTableBlocks > 1){
-        blockInfo->nextOverflowBlock = BF_GetBlockCounter(fileDesc);
-    }
-    printf("Bloxck info %d", sizeof(BlockInfo));
-    memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
+    /* We first write the BlockInfo struct , then the nums*/
     offset += sizeof(blockInfo);
     for (j = 0; j < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && j < buckets ; j++){  // Write the inecies for blocks
         num = 2 + j;  // Block 2 is the first block for records
@@ -106,6 +99,14 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         offset += sizeof(int);
         numWriten++;
     }
+    /* Update block info struct */
+    blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
+    blockInfo->bytesInBlock = numWriten*sizeof(int) + sizeof(BlockInfo);
+    if (hashTableBlocks > 1){
+        blockInfo->nextOverflowBlock = BF_GetBlockCounter(fileDesc);
+    }
+    printf("Bloxck info %d", blockInfo->bytesInBlock);
+    memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
 
     /* Write back block 1 */
     if (BF_WriteBlock(fileDesc, 1) < 0){
@@ -115,18 +116,12 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
 
     /* Write the leftover nums in overflow blocks that we will allocate */
     for (j = 1; j < hashTableBlocks; j++){  // we already have 1 block allocated for hash table
+        int numWritenInloop = 0;
         if (BF_AllocateBlock(fileDesc) < 0) {
             BF_PrintError("Error allocating block: ");
             return -1;  //what will happen here ????
         }
         blockCounter = BF_GetBlockCounter(fileDesc);
-
-        /* Update block info struct */
-        blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
-        blockInfo->bytesInBlock = 0;
-        if (hashTableBlocks > 1 + j){  // if we have more overflow blocks fix the pointer
-            blockInfo->nextOverflowBlock = blockCounter + 1;
-        }
 
         /* Read overflow block */
         if (BF_ReadBlock(fileDesc, blockCounter-1, &block) < 0) {
@@ -135,13 +130,23 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         }
 
         /* Write to overflow block */
-        memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
         offset += sizeof(blockInfo);
         for (j = 0; j < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && j < buckets - numWriten ; j++){  // Write the inecies for blocks
             num = numWriten + 1 + j;  // Block 2 is the first block for records
             memcpy(block+offset, &num, sizeof(int));
             offset += sizeof(int);
+            numWritenInloop ++;
         }
+        numWriten += numWritenInloop;  // update numWriten for the next loop
+
+        /* Update block info struct */
+        blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
+        blockInfo->bytesInBlock = numWritenInloop*sizeof(int) + sizeof(BlockInfo);
+        if (hashTableBlocks > 1 + j){  // if we have more overflow blocks fix the pointer
+            blockInfo->nextOverflowBlock = blockCounter + 1;
+        }
+        memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
+        printf("Bloxck info %d", blockInfo->bytesInBlock);
 
         /* Write back overflow block */
         if (BF_WriteBlock(fileDesc, blockCounter-1) < 0){

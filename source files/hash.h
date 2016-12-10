@@ -8,7 +8,7 @@
 
 
 typedef struct BlockInfo {
-    int containedRecords;
+    int bytesInBlock;
     int nextOverflowBlock;
 } BlockInfo;
 

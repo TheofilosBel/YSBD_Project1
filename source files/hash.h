@@ -1,8 +1,10 @@
 #ifndef __HASH_H__
 #define __HASH_H__
 
-#define endRecord '$'
-#define filedSeperator '|'
+/* '$' is used to terminate a record */
+#define END_RECORD '$'
+/* '|' is used to separate the fields inside a record */
+#define FIELD_SEPARATOR '|'
 
 typedef struct Record {
 	int id;

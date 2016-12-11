@@ -6,7 +6,6 @@
 /* '|' is used to separate the fields inside a record */
 #define FIELD_SEPARATOR '|'
 
-
 typedef struct BlockInfo {
     int bytesInBlock;
     int nextOverflowBlock;
@@ -26,7 +25,6 @@ void printRecord(Record* recordptr);
 int* Block_ReadInts(void *blockptr, int numToRead);
 Record* Block_ReadRecords(void *blockptr, int numToRead);
 
-
 /* Η συνάρτηση HT_CreateIndex χρησιμοποιείται για τη δημιουργία και κατάλληλη αρχικοποίηση ενός 
 άδειου αρχείου κατακερματισμού με όνομα fileName. Σε περίπτωση που εκτελεστεί επιτυχώς, 
 επιστρέφεται 0, ενώ σε διαφορετική περίπτωση -1. */
@@ -37,7 +35,6 @@ int HT_CreateIndex(
     int attrLength,                                                 /* μήκος πεδίου-κλειδιού */ 
     int buckets                                              /* αριθμός κάδων κατακερματισμού*/
 );
-
 
 
 /* Όπου attrType, attrName, και attrLength αφορούν το πεδίο κλειδί, fileDesc είναι ο αναγνωριστικός

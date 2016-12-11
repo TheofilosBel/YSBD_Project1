@@ -79,10 +79,10 @@ int main(int argc, char **argv) {
 
     // -- open index
     info = open_Index(fileName);
-    /*
+    
     // -- insert entries
     insert_Entries(info);
-
+    /*
     // -- get all entries
     char value[20];
     strcpy(value, "Keratsini");

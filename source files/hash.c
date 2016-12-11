@@ -43,7 +43,7 @@ unsigned long hashStr(char *str) {
     unsigned long hash = 5381;
     int c;
 
-    while (c = *str++) {
+    while ((c = *str++)) {
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
 
@@ -51,10 +51,10 @@ unsigned long hashStr(char *str) {
 }
 
 
-void printDebug(int fileDesc) {
+void printDebug(int fileDesc, int blockIndex) {
     BlockInfo tempInfo;
     void *block;
-    int temp, offset = 0, block_num = 1;
+    int temp, offset = 0, block_num = blockIndex;
 
     /* Read block with num 1 */
     if (BF_ReadBlock(fileDesc, block_num, &block) < 0) {

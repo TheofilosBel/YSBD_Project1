@@ -323,6 +323,9 @@ int HT_CloseIndex(HT_info* header_info) {
 int HT_InsertEntry(HT_info header_info, Record record) {
     char *hashKey;           /* The key passed to the hash function */
     unsigned long hashIndex; /* The value returned by the hash function */
+    int myBlockIndex;
+    BlockInfo *blockInfo;
+    void *block;
 
     hashKey = malloc((header_info.attrLength + 1) * sizeof(char));
     if (hashKey == NULL) {
@@ -343,8 +346,73 @@ int HT_InsertEntry(HT_info header_info, Record record) {
 
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % header_info.numBuckets) + 2;
-    printRecord(&record);
-    printf("Hash Index is %ld\n", hashIndex);
+
+    /* Gain access to the bucket with index hashIndex */
+    if (BF_ReadBlock(header_info.fileDesc, hashIndex, &block) < 0) {
+        BF_PrintError("Error at insertEntry, when getting block: ");
+        return -1;
+    }
+
+    blockInfo = malloc(sizeof(BlockInfo));
+    if (blockInfo == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    memcpy(blockInfo, block, sizeof(BlockInfo));
+
+    /*
+     * Insert the entry in the first block with available space
+     * If a block has a nextOverflowBlock index with value
+     * not equal to -1 then it can't hold any more records so we pass it
+     */
+    while (blockInfo->nextOverflowBlock != -1) {
+        myBlockIndex = blockInfo->nextOverflowBlock;
+        if (BF_ReadBlock(header_info.fileDesc, blockInfo->nextOverflowBlock, &block) < 0) {
+            BF_PrintError("Error at insertEntry, when getting block: ");
+            return -1;
+        }
+    }
+
+    if (blockInfo->bytesInBlock + sizeof(Record) <= BLOCK_SIZE) {
+        /* Write the record */
+        memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
+        
+        /* Update the block info */
+        blockInfo->bytesInBlock += sizeof(Record);
+        memcpy(block, blockInfo, sizeof(BlockInfo));
+        
+        /* Write back block */
+        if (BF_WriteBlock(header_info.fileDesc, myBlockIndex) < 0){
+            BF_PrintError("Error at insertEntry, when writing block back: ");
+            return -1;
+        }
+    }
+    else {
+        /* Update nextOverflowBlock index of current block */
+        blockInfo->nextOverflowBlock = BF_GetBlockCounter(header_info.fileDesc);
+        memcpy(block, blockInfo, sizeof(BlockInfo));
+
+        /* Allocate new overflow block and initialise its info */
+        if (BF_AllocateBlock(header_info.fileDesc) < 0) {
+            BF_PrintError("Error allocating block: ");
+            return -1;
+        }
+        if (BF_ReadBlock(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1, &block) < 0) {
+            BF_PrintError("Error at insertEntry, when getting block: ");
+            return -1;
+        }
+
+        blockInfo->bytesInBlock = sizeof(BlockInfo);
+        blockInfo->nextOverflowBlock = -1;
+        memcpy(block, blockInfo, sizeof(BlockInfo));
+    
+        /* Write the record in the new overflow block */
+        memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
+    }
+
+    free(hashKey);
+    free(blockInfo);
 
     return 0;
 }

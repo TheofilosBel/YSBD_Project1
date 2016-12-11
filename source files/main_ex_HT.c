@@ -69,8 +69,6 @@ int main(int argc, char **argv) {
     HT_info *info;
     Record record;
 
-
-
     // make the record
     record.id = 1;
     strcpy(record.name, "john");
@@ -92,7 +90,8 @@ int main(int argc, char **argv) {
 
 
     // -- insert entries
-    insert_Entries(info);
+    //insert_Entries(info);
+    HT_InsertEntry(*info, record);
 
 
     /*

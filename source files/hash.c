@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 void printRecord(Record* recordptr){
-    printf("Record with id %d:\n", recordptr->id);
+    printf("Record with id :%d\n", recordptr->id);
     printf("Name :%s\nSurname :%s\nCity :%s\n", recordptr->name, recordptr->surname, recordptr->city);
 }
 
@@ -76,6 +76,7 @@ void printDebug(int fileDesc, int blockIndex) {
     while (offset < BLOCK_SIZE) {
         if (flag == 1) {
             memcpy(&recordTemp, block + offset, sizeof(Record));
+            printf("Offset is %d", offset);
             offset += sizeof(Record);
             printRecord(&recordTemp);
         } else {
@@ -410,7 +411,8 @@ int HT_InsertEntry(HT_info header_info, Record record) {
      * If a block has a nextOverflowBlock index with value
      * not equal to -1 then it can't hold any more records so we pass it
      */
-    printf("Next overflow block is %d\n", blockInfo->nextOverflowBlock);
+    myBlockIndex = hashIndex;
+    printf("Next overflow block is %d , b index %d\n", blockInfo->nextOverflowBlock, myBlockIndex);
     while (blockInfo->nextOverflowBlock != -1) {
         myBlockIndex = blockInfo->nextOverflowBlock;
         if (BF_ReadBlock(header_info.fileDesc, blockInfo->nextOverflowBlock, &block) < 0) {
@@ -456,7 +458,7 @@ int HT_InsertEntry(HT_info header_info, Record record) {
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
     }
 
-    //printDebug(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1);
+    printDebug(header_info.fileDesc, myBlockIndex);
 
     free(hashKey);
     free(blockInfo);

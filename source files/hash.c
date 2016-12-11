@@ -134,6 +134,13 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     int blockCounter = 0;
     int hashTableBlocks = 0;
     void *block;
+    BlockInfo *blockInfo;
+
+    /* Malloc space for blockInfo */
+    if ((blockInfo = malloc(sizeof(BlockInfo))) == NULL) {
+        fprintf(stderr,"Not enough memory\n");
+        return -1;
+    }
 
     /* Make new BF file and write the HT info in the first block */
     if (BF_CreateFile(fileName) < 0 ) {
@@ -151,6 +158,27 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         if (BF_AllocateBlock(fileDesc) < 0) {
             BF_PrintError("Error allocating block: ");
             return -1;
+        }
+
+        /* Initialize each block with the BlockInfo struct */
+        if (j >= 2){
+
+            /* Read blocks after index 2  */
+            if (BF_ReadBlock(fileDesc, j, &block) < 0) {
+                BF_PrintError("Error at CreateIndex, when getting block: ");
+                return -1;
+            }
+
+            /* Write blockInfo to block */
+            blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
+            blockInfo->bytesInBlock = sizeof(BlockInfo);  //  bytes are writen to the block
+            memcpy(block, blockInfo, sizeof(BlockInfo));
+
+            /* Write back block 1 */
+            if (BF_WriteBlock(fileDesc, j) < 0){
+                BF_PrintError("Error at CreateIndex, when writing block back");
+                return -1;
+            }
         }
     }
 
@@ -190,12 +218,6 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     int offset = 0;
     int num = 0;
     int numWriten = 0;
-    BlockInfo *blockInfo;
-
-    if ((blockInfo = malloc(sizeof(BlockInfo))) == NULL) {
-        fprintf(stderr,"Not enough memory\n");
-        return -1;
-    }
 
     /* We first write the BlockInfo struct, then the indices of the buckets */
     offset += sizeof(BlockInfo);
@@ -367,6 +389,7 @@ int HT_InsertEntry(HT_info header_info, Record record) {
 
     printf("\nIn insert\n");
     printRecord(&record);
+    printf("HashIndex is %d\n", hashIndex);
 
     /* Gain access to the bucket with index hashIndex */
     if (BF_ReadBlock(header_info.fileDesc, hashIndex, &block) < 0) {
@@ -387,6 +410,7 @@ int HT_InsertEntry(HT_info header_info, Record record) {
      * If a block has a nextOverflowBlock index with value
      * not equal to -1 then it can't hold any more records so we pass it
      */
+    printf("Next overflow block is %d\n", blockInfo->nextOverflowBlock);
     while (blockInfo->nextOverflowBlock != -1) {
         myBlockIndex = blockInfo->nextOverflowBlock;
         if (BF_ReadBlock(header_info.fileDesc, blockInfo->nextOverflowBlock, &block) < 0) {
@@ -431,7 +455,6 @@ int HT_InsertEntry(HT_info header_info, Record record) {
         /* Write the record in the new overflow block */
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
     }
-    printf("here\n");
 
     //printDebug(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1);
 

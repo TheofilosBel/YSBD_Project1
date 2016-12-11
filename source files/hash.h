@@ -18,6 +18,9 @@ typedef struct Record {
 	char city[25];
 } Record;
 
+/* Hash Functions */
+unsigned long hashStr(char *str);
+
 /* Record Functions */
 void printRecord(Record* recordptr);
 

@@ -67,10 +67,20 @@ void get_AllEntries(HT_info *info, void *value) {
 int main(int argc, char **argv) {
     BF_Init();
     HT_info *info;
+    Record record;
+
+
+
+    // make the record
+    record.id = 1;
+    strcpy(record.name, "john");
+    strcpy(record.surname, "Manios");
+    strcpy(record.city, "Mpournazi");
+    printRecord(&record);
 
     // -- create index
     char attrName[20];
-    int buckets = 128;
+    int buckets = 256;
     strcpy(attrName, "city");
     char attrType = 'c';
     // strcpy(attrName, "id");
@@ -79,9 +89,12 @@ int main(int argc, char **argv) {
 
     // -- open index
     info = open_Index(fileName);
-    
+
+
     // -- insert entries
     insert_Entries(info);
+
+
     /*
     // -- get all entries
     char value[20];

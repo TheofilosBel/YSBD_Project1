@@ -4,6 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void printRecord(Record* recordptr){
+    printf("Record with id %d:\n", recordptr->id);
+    printf("Name :%s\nSurname :%s\nCity :%s\n", recordptr->name, recordptr->surname, recordptr->city);
+}
+
+
 int* Block_ReadInts(void *blockptr, int numToRead){
     int *intptr = (int *)blockptr;  // Cast void* to int*
     int *arrayOfInts;
@@ -20,7 +26,7 @@ int* Block_ReadInts(void *blockptr, int numToRead){
 }
 
 Record* Block_ReadRecords(void *blockptr, int numToRead){
-    Record *recordptr = (int *)blockptr;  // Cast void* to int*
+    Record *recordptr = (Record *)blockptr;  // Cast void* to int*
     Record *arrayOfRecords;
     int j = 0;
 
@@ -32,6 +38,18 @@ Record* Block_ReadRecords(void *blockptr, int numToRead){
 
     return arrayOfRecords;
 }
+
+unsigned long hashStr(char *str) {
+    unsigned long hash = 5381;
+    int c;
+
+    while (c = *str++) {
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
+}
+
 
 void printDebug(int fileDesc) {
     BlockInfo tempInfo;
@@ -185,7 +203,6 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         BF_PrintError("Error at CreateIndex, when writing block back");
         return -1;
     }
-
     /* Write the leftover nums in overflow blocks that we will allocate */
     for (j = 1; j < hashTableBlocks; j++) {  // we already have 1 block allocated for hash table
         int numWritenInloop = 0;
@@ -215,7 +232,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
         blockInfo->nextOverflowBlock = -1;  // Default block pointer -1
         blockInfo->bytesInBlock = numWritenInloop*sizeof(int) + sizeof(BlockInfo);
         if (hashTableBlocks > 1 + j){  // if we have more overflow blocks fix the pointer
-            blockInfo->nextOverflowBlock = blockCounter + 1;
+            blockInfo->nextOverflowBlock = blockCounter;
         }
         memcpy(block, blockInfo, sizeof(BlockInfo));  // Write block info
 
@@ -227,7 +244,6 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
     }
 
     free(blockInfo);
-
     return 0;
 }
 
@@ -279,7 +295,7 @@ HT_info* HT_OpenIndex(char *fileName) {
     sscanf(pch, "%d", &(hash_info_ptr->attrLength));
     
     pch = strtok(NULL, "$");
-    sscanf(pch, "%d", &(hash_info_ptr->numBuckets));
+    sscanf(pch, "%ld", &(hash_info_ptr->numBuckets));
 
     hash_info_ptr->fileDesc = fileDesc;
     hash_info_ptr->numBFiles = 1;
@@ -306,9 +322,9 @@ int HT_CloseIndex(HT_info* header_info) {
 
 int HT_InsertEntry(HT_info header_info, Record record) {
     char *hashKey; /* The key passed to the hash function */
-    int hashIndex; /* The value returned by the hash function */
+    unsigned long hashIndex; /* The value returned by the hash function */
 
-    hashKey = malloc((strlen(header_info.attrName) + 1) * sizeof(char));
+    hashKey = malloc((header_info.attrLength + 1) * sizeof(char));
     if (hashKey == NULL) {
         printf("Error allocating memory.\n");
         return -1;
@@ -316,8 +332,8 @@ int HT_InsertEntry(HT_info header_info, Record record) {
 
     /* Chose whether to hash based on an int or a string */
     strcpy(hashKey, header_info.attrName);
-    if (strcmp(hashKey, "id") == 0)
-        hashIndex = hashInt(record.id);
+    if (strcmp(hashKey, "id") == 0){}
+        //hashIndex = hashInt(record.id);
     else if (strcmp(hashKey, "name") == 0)
         hashIndex = hashStr(record.name);
     else if (strcmp(hashKey, "surname") == 0)
@@ -327,6 +343,8 @@ int HT_InsertEntry(HT_info header_info, Record record) {
 
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % header_info.numBuckets) + 2;
+    printRecord(&record);
+    printf("Hash Index is %d\n", hashIndex);
 
     return 0;
 }

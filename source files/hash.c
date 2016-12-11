@@ -74,9 +74,15 @@ void printDebug(int fileDesc, int blockIndex) {
     }
 
     while (offset < BLOCK_SIZE) {
-        memcpy(&intTemp, block + offset, sizeof(int));
-        offset += sizeof(int);
-        printf("%d\n", intTemp);
+        if (flag == 1) {
+            memcpy(&recordTemp, block + offset, sizeof(Record));
+            offset += sizeof(Record);
+            printRecord(&recordTemp);
+        } else {
+            memcpy(&intTemp, block + offset, sizeof(int));
+            offset += sizeof(int);
+            printf("%d\n", intTemp);
+        }
     }
 
     while (tempInfo.nextOverflowBlock != -1) {
@@ -425,8 +431,9 @@ int HT_InsertEntry(HT_info header_info, Record record) {
         /* Write the record in the new overflow block */
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
     }
+    printf("here\n");
 
-    printDebug(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1);
+    //printDebug(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1);
 
     free(hashKey);
     free(blockInfo);

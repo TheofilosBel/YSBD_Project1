@@ -54,8 +54,8 @@ unsigned long hashStr(char *str) {
 void printDebug(int fileDesc, int blockIndex) {
     BlockInfo tempInfo;
     void *block;
-    int temp, offset = 0, block_num = blockIndex;
-    int sizeToRead, flag = 0;
+    int offset = 0, block_num = blockIndex, intTemp, flag = 0;
+    Record recordTemp;
 
     /* Read block with num 1 */
     if (BF_ReadBlock(fileDesc, block_num, &block) < 0) {
@@ -68,18 +68,15 @@ void printDebug(int fileDesc, int blockIndex) {
     printf("bytesInBlock%d = %d\nnextOverflowBlock = %d\n", block_num, tempInfo.bytesInBlock, tempInfo.nextOverflowBlock);
     offset += sizeof(BlockInfo);
 
-    while (offset < BLOCK_SIZE) {
-        memcpy(&temp, block + offset, sizeof(int));
-        offset += sizeof(int);
-        printf("%d\n", temp);
+    /* If its the firs block we read int's , if it's another block then read records */
+    if (block_num != 1) {
+        flag = 1;
     }
 
-    /* If its the firs block we read int's , if it's another block then read records */
-    if (block_num != 1){
-        sizeToRead = sizeof(Record);
-        flag = 1;
-    } else {
-        sizeToRead = sizeof(int);
+    while (offset < BLOCK_SIZE) {
+        memcpy(&intTemp, block + offset, sizeof(int));
+        offset += sizeof(int);
+        printf("%d\n", intTemp);
     }
 
     while (tempInfo.nextOverflowBlock != -1) {
@@ -98,12 +95,14 @@ void printDebug(int fileDesc, int blockIndex) {
         offset += sizeof(BlockInfo);
 
         while (offset < BLOCK_SIZE) {
-            memcpy(&temp, block + offset, sizeToRead);
-            offset += sizeToRead;
             if (flag == 1) {
-                printRecord(temp);
+                memcpy(&recordTemp, block + offset, sizeof(Record));
+                offset += sizeof(Record);
+                printRecord(&recordTemp);
             } else {
-                printf("%d\n", temp);
+                memcpy(&intTemp, block + offset, sizeof(int));
+                offset += sizeof(int);
+                printf("%d\n", intTemp);
             }
         }
     }
@@ -255,7 +254,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
             return -1;
         }
     }
-
+    printDebug(fileDesc, 1);
     free(blockInfo);
     return 0;
 }
@@ -360,6 +359,9 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % header_info.numBuckets) + 2;
 
+    printf("\nIn insert\n");
+    printRecord(&record);
+
     /* Gain access to the bucket with index hashIndex */
     if (BF_ReadBlock(header_info.fileDesc, hashIndex, &block) < 0) {
         BF_PrintError("Error at insertEntry, when getting block: ");
@@ -423,6 +425,8 @@ int HT_InsertEntry(HT_info header_info, Record record) {
         /* Write the record in the new overflow block */
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
     }
+
+    printDebug(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1);
 
     free(hashKey);
     free(blockInfo);

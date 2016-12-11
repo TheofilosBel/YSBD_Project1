@@ -5,5 +5,5 @@ cmake*/
 #igonre all archives and object files
 *.[oa]
 #igniore all makefiles
-Makefile
-source files/HT*
+source files/Makefile
+source files/HT_hashFile 

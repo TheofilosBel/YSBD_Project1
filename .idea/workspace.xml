@@ -13,13 +13,9 @@
   <component name="ChangeListManager">
     <list default="true" id="d372f712-efed-4535-899d-23c71fe9a8d1" name="Default" comment="">
       <change type="DELETED" beforePath="$PROJECT_DIR$/hash.c" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/source files/Makefile" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/HT_hashFile" afterPath="$PROJECT_DIR$/source files/HT_hashFile" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/execHT" afterPath="$PROJECT_DIR$/source files/execHT" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/hash.c" afterPath="$PROJECT_DIR$/source files/hash.c" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/main_ex_HT.c" afterPath="$PROJECT_DIR$/source files/main_ex_HT.c" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/Makefile" afterPath="$PROJECT_DIR$/source files/Makefile" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -447,12 +443,12 @@
       <workItem from="1481358304462" duration="6326000" />
       <workItem from="1481365045843" duration="5134000" />
       <workItem from="1481393247777" duration="2201000" />
-      <workItem from="1481442446155" duration="15381000" />
+      <workItem from="1481442446155" duration="15798000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="64311000" />
+    <option name="totallyTimeSpent" value="64728000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="49" y="-4" width="1551" height="904" extended-state="6" />

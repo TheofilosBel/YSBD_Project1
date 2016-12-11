@@ -321,7 +321,7 @@ int HT_CloseIndex(HT_info* header_info) {
 }
 
 int HT_InsertEntry(HT_info header_info, Record record) {
-    char *hashKey; /* The key passed to the hash function */
+    char *hashKey;           /* The key passed to the hash function */
     unsigned long hashIndex; /* The value returned by the hash function */
 
     hashKey = malloc((header_info.attrLength + 1) * sizeof(char));
@@ -344,7 +344,7 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % header_info.numBuckets) + 2;
     printRecord(&record);
-    printf("Hash Index is %d\n", hashIndex);
+    printf("Hash Index is %ld\n", hashIndex);
 
     return 0;
 }

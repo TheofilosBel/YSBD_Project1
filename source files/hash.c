@@ -55,6 +55,7 @@ void printDebug(int fileDesc, int blockIndex) {
     BlockInfo tempInfo;
     void *block;
     int temp, offset = 0, block_num = blockIndex;
+    int sizeToRead, flag = 0;
 
     /* Read block with num 1 */
     if (BF_ReadBlock(fileDesc, block_num, &block) < 0) {
@@ -73,6 +74,14 @@ void printDebug(int fileDesc, int blockIndex) {
         printf("%d\n", temp);
     }
 
+    /* If its the firs block we read int's , if it's another block then read records */
+    if (block_num != 1){
+        sizeToRead = sizeof(Record);
+        flag = 1;
+    } else {
+        sizeToRead = sizeof(int);
+    }
+
     while (tempInfo.nextOverflowBlock != -1) {
         block_num = tempInfo.nextOverflowBlock;
 
@@ -89,9 +98,13 @@ void printDebug(int fileDesc, int blockIndex) {
         offset += sizeof(BlockInfo);
 
         while (offset < BLOCK_SIZE) {
-            memcpy(&temp, block + offset, sizeof(int));
-            offset += sizeof(int);
-            printf("%d\n", temp);
+            memcpy(&temp, block + offset, sizeToRead);
+            offset += sizeToRead;
+            if (flag == 1) {
+                printRecord(temp);
+            } else {
+                printf("%d\n", temp);
+            }
         }
     }
 }

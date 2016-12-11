@@ -6,4 +6,4 @@ cmake*/
 *.[oa]
 #igniore all makefiles
 Makefile
-HT_hashFile
+source files/HT*

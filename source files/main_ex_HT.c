@@ -90,11 +90,8 @@ int main(int argc, char **argv) {
 
 
     // -- insert entries
-    //insert_Entries(info);
-    HT_InsertEntry(*info, record);
+    insert_Entries(info);
 
-
-    /*
     // -- get all entries
     char value[20];
     strcpy(value, "Keratsini");
@@ -105,10 +102,12 @@ int main(int argc, char **argv) {
     // -- close index
     close_Index(info);
 
+    /*
     // clean up
     free(info->attrName);
     free(info);
     info = NULL;
-    */
+     */
+
     return 0;
 }

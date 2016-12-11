@@ -15,7 +15,9 @@
       <change type="DELETED" beforePath="$PROJECT_DIR$/hash.c" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/HT_hashFile" afterPath="$PROJECT_DIR$/source files/HT_hashFile" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/execHT" afterPath="$PROJECT_DIR$/source files/execHT" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/Makefile" afterPath="$PROJECT_DIR$/source files/Makefile" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/hash.c" afterPath="$PROJECT_DIR$/source files/hash.c" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/main_ex_HT.c" afterPath="$PROJECT_DIR$/source files/main_ex_HT.c" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -46,8 +48,8 @@
       <file leaf-file-name="main_ex_HT.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source files/main_ex_HT.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="496">
-              <caret line="101" column="28" lean-forward="true" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
+            <state relative-caret-position="712">
+              <caret line="111" column="7" lean-forward="true" selection-start-line="111" selection-start-column="7" selection-end-line="111" selection-end-column="7" />
               <folding>
                 <element signature="e#45#63#0" expanded="true" />
               </folding>
@@ -58,8 +60,8 @@
       <file leaf-file-name="hash.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/source files/hash.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="126">
-              <caret line="7" column="28" lean-forward="false" selection-start-line="7" selection-start-column="28" selection-end-line="7" selection-end-column="28" />
+            <state relative-caret-position="604">
+              <caret line="571" column="9" lean-forward="false" selection-start-line="571" selection-start-column="9" selection-end-line="571" selection-end-column="9" />
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
               </folding>
@@ -70,8 +72,8 @@
       <file leaf-file-name="hash.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source files/hash.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="226">
-              <caret line="21" column="22" lean-forward="false" selection-start-line="21" selection-start-column="22" selection-end-line="21" selection-end-column="22" />
+            <state relative-caret-position="496">
+              <caret line="91" column="38" lean-forward="true" selection-start-line="91" selection-start-column="38" selection-end-line="91" selection-end-column="38" />
               <folding />
             </state>
           </provider>
@@ -100,6 +102,11 @@
         </entry>
       </file>
     </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>charValue</find>
+    </findStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -443,12 +450,12 @@
       <workItem from="1481358304462" duration="6326000" />
       <workItem from="1481365045843" duration="5134000" />
       <workItem from="1481393247777" duration="2201000" />
-      <workItem from="1481442446155" duration="15798000" />
+      <workItem from="1481442446155" duration="19627000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="64728000" />
+    <option name="totallyTimeSpent" value="68557000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="49" y="-4" width="1551" height="904" extended-state="6" />
@@ -887,14 +894,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/source files/hash.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="226">
-          <caret line="21" column="22" lean-forward="false" selection-start-line="21" selection-start-column="22" selection-end-line="21" selection-end-column="22" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/mains_makefile/Makefile">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="270">
@@ -911,10 +910,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/source files/main_ex_HT.c">
+    <entry file="file://$PROJECT_DIR$/source files/hash.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="496">
-          <caret line="101" column="28" lean-forward="true" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
+          <caret line="91" column="38" lean-forward="true" selection-start-line="91" selection-start-column="38" selection-end-line="91" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source files/main_ex_HT.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="712">
+          <caret line="111" column="7" lean-forward="true" selection-start-line="111" selection-start-column="7" selection-end-line="111" selection-end-column="7" />
           <folding>
             <element signature="e#45#63#0" expanded="true" />
           </folding>
@@ -923,8 +930,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/source files/hash.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="126">
-          <caret line="7" column="28" lean-forward="false" selection-start-line="7" selection-start-column="28" selection-end-line="7" selection-end-column="28" />
+        <state relative-caret-position="604">
+          <caret line="571" column="9" lean-forward="false" selection-start-line="571" selection-start-column="9" selection-end-line="571" selection-end-column="9" />
           <folding>
             <element signature="e#0#27#0" expanded="true" />
           </folding>

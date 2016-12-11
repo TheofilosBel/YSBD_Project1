@@ -469,9 +469,112 @@ int HT_InsertEntry(HT_info header_info, Record record) {
 
 
 int HT_GetAllEntries(HT_info header_info, void *value) {
-    /* Add your code here */
+    char *hashKey, *stringValue;           /* The key passed to the hash function */
+    unsigned long hashIndex; /* The value returned by the hash function */
+    int myBlockIndex, *intValue, blockCounter = 0, offset, flag = 0;
+    BlockInfo *blockInfo;
+    Record record;
+    void *block;
 
-    return -1;
+    /* Check weather value is an int or a string and cast it */
+    if (header_info.attrType == 'c'){
+        stringValue = (char *)value;
+    } else if (header_info.attrType == 'i') {
+        intValue = (int *)value;
+    }
+
+    hashKey = malloc((header_info.attrLength + 1) * sizeof(char));
+    if (hashKey == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    /* Chose whether to hash based on an int or a string */
+    strcpy(hashKey, header_info.attrName);
+    if (strcmp(hashKey, "id") == 0){}
+        //hashIndex = hashInt(intValue);
+    else if (strcmp(hashKey, "name") == 0)
+        hashIndex = hashStr(stringValue);
+    else if (strcmp(hashKey, "surname") == 0)
+        hashIndex = hashStr(stringValue);
+    else if (strcmp(hashKey, "city") == 0)
+        hashIndex = hashStr(stringValue);
+
+    /* We can't enter records in the first two buckets */
+    hashIndex = (hashIndex % header_info.numBuckets) + 2;
+
+    blockInfo = malloc(sizeof(BlockInfo));
+    if (blockInfo == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    /* Look for the record that holds the asked value */
+    myBlockIndex = hashIndex;
+    do{
+        /* Read Block */
+        if (BF_ReadBlock(header_info.fileDesc, myBlockIndex, &block) < 0) {
+            BF_PrintError("Error at insertEntry, when getting block: ");
+            return -1;
+        }
+
+        /* initialize the vars for the loop */
+        offset = sizeof(BlockInfo);
+        blockCounter++;
+
+        /* Search each record on the block to find the asked value */
+        while ( offset < BLOCK_SIZE ){
+            memcpy(&record, block + offset, sizeof(Record));
+            offset += sizeof(Record);
+
+            /* Find out which record attribute we need to check */
+            if (strcmp(hashKey, "id") == 0){
+                if (record.id == *intValue) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                    break;
+                }
+            }
+            else if (strcmp(hashKey, "name") == 0) {
+                if (strcmp(record.name, stringValue) == 0) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                    break;
+                }
+            }
+            else if (strcmp(hashKey, "surname") == 0) {
+                if (strcmp(record.surname, stringValue) == 0) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                    break;
+                }
+            }
+            else if (strcmp(hashKey, "city") == 0) {
+                if (strcmp(record.city, stringValue) == 0) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                    break;
+                }
+            }
+
+        }
+
+        /* Update myBlockIndex */
+        memcpy(blockInfo, block, sizeof(BlockInfo));
+        myBlockIndex = blockInfo->nextOverflowBlock;
+
+    }while(myBlockIndex != -1 && !flag );  // If we found it (flag=1) or no more Blocks then end loop
+
+    if (!flag) {
+        printf("We could't find any record with the asked value\n");
+    }
+
+    free(blockInfo);
+    return 0;
 
 }
 

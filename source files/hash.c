@@ -305,20 +305,29 @@ int HT_CloseIndex(HT_info* header_info) {
 }
 
 int HT_InsertEntry(HT_info header_info, Record record) {
-    char *hashKey;
-    int hashIndex;
-    printf("RRR\n");
+    char *hashKey; /* The key passed to the hash function */
+    int hashIndex; /* The value returned by the hash function */
+
+    hashKey = malloc((strlen(header_info.attrName) + 1) * sizeof(char));
+    if (hashKey == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    /* Chose whether to hash based on an int or a string */
     strcpy(hashKey, header_info.attrName);
-    printf("%s\n", hashKey); /*
     if (strcmp(hashKey, "id") == 0)
-        //hashIndex = hashInt(record.id);
+        hashIndex = hashInt(record.id);
     else if (strcmp(hashKey, "name") == 0)
-        //hashIndex = hashStr(record.name);
+        hashIndex = hashStr(record.name);
     else if (strcmp(hashKey, "surname") == 0)
-        //hashIndex = hashStr(record.surname);
+        hashIndex = hashStr(record.surname);
     else if (strcmp(hashKey, "city") == 0)
-        //hashIndex = hashStr(record.city);
-*/
+        hashIndex = hashStr(record.city);
+
+    /* We can't enter records in the first two buckets */
+    hashIndex = (hashIndex % header_info.numBuckets) + 2;
+
     return 0;
 }
 

@@ -1,54 +1,108 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "BF.h"
+#include <assert.h>
 #include "exhash.h"
+#include "../BF/linux/BF.h"
 
-#define NAME_SIZE 			15
-#define SURNAME_SIZE		20
-#define CITY_SIZE           10
+void create_Index(char *fileName, char *attrName, char attrType, int depth) {
+    int attrLength = strlen(attrName);
+    assert(!EH_CreateIndex(fileName, attrName, attrType, attrLength, depth));
+}
 
-#define FILENAME_HASH_ID "hash_id"
+EH_info *open_Index(char *fileName) {
+    EH_info *info;
+    assert((info = EH_OpenIndex(fileName)) != NULL);
+    return info;
+}
 
-int main(int argc, char** argv) {
-	EH_info *hashId;
-	Record record;
+void close_Index(EH_info *info) {
+    assert(!EH_CloseIndex(info));
+}
 
-	BF_Init();
-	
-	/* Create hash index on id */
-    if ( EH_CreateIndex(FILENAME_HASH_ID, 'i', "id", sizeof(int), 3) < 0 ) {
-		fprintf(stderr, "Error creating hash index.\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	/* Open hash index based on id */
-	if ((hashId = EH_OpenIndex(FILENAME_HASH_ID)) == NULL) {
-		fprintf(stderr, "Error opening hash index.\n");
-		EH_CloseIndex(hashId);
-		exit(EXIT_FAILURE);
-	}
+void insert_Entries(EH_info *info) {
+    FILE *stream;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    stream = stdin;
+    Record record;
 
-	while (!feof(stdin)) { /* read line, until eof */
+    while ((read = getline(&line, &len, stream)) != -1) {
+        line[read - 2] = 0;
+        char *pch;
 
-		scanf("%d %s %s %c %s %d %c %d %d", &record.id, record.name, record.surname, record.city);
-				
-		/* Insert record in hash index based on id */
-		if (EH_InsertEntry(hashId, record) < 0) {
-			fprintf(stderr, "Error inserting entry in hash index\n");
-			EH_CloseIndex(hashId);
-			exit(EXIT_FAILURE);
-		}
-	}
-	
-	/* Close id hash index */
-	if (EH_CloseIndex(hashId) < 0) {
-		fprintf(stderr, "Error closing id hash index.\n");
-		exit(EXIT_FAILURE);
-	}
-		
-	/* Print blocks to see content */ 
-		
-	return EXIT_SUCCESS;
+        pch = strtok(line, ",");
+        record.id = atoi(pch);
+
+        pch = strtok(NULL, ",");
+        pch++;
+        pch[strlen(pch) - 1] = 0;
+        strncpy(record.name, pch, sizeof(record.name));
+
+        pch = strtok(NULL, ",");
+        pch++;
+        pch[strlen(pch) - 1] = 0;
+        strncpy(record.surname, pch, sizeof(record.surname));
+
+        pch = strtok(NULL, ",");
+        pch++;
+        pch[strlen(pch) - 1] = 0;
+        strncpy(record.city, pch, sizeof(record.city));
+
+        assert(!EH_InsertEntry(info, record));
+    }
+    free(line);
+}
+
+void get_AllEntries(EH_info *info, void *value) {
+    assert(EH_GetAllEntries(*info, value) != -1);
+}
+
+#define fileName "EH_hashFile"
+int main(int argc, char **argv) {
+    BF_Init();
+    EH_info *info;
+    Record record;
+
+    // make the record
+    record.id = 1;
+    strcpy(record.name, "john");
+    strcpy(record.surname, "Manios");
+    strcpy(record.city, "Mpournazi");
+    printRecord(&record);
+
+    // -- create index
+    char attrName[20];
+    int depth = 7;
+    strcpy(attrName, "city");
+    char attrType = 'c';
+    // strcpy(attrName, "id");
+    // char attrType = 'i';
+    create_Index(fileName, attrName, attrType, depth);
+
+    // -- open index
+    info = open_Index(fileName);
+
+    // -- insert entries
+    //insert_Entries(info);
+    EH_InsertEntry(info, record);
+
+    // -- get all entries
+    char value[20];
+    strcpy(value, "Keratsini");
+    get_AllEntries(info, value);
+    // int value = 11903588;
+    // get_AllEntries(info, &value);
+
+    // -- close index
+    close_Index(info);
+
+    /*
+    // clean up
+    free(info->attrName);
+    free(info);
+    info = NULL;
+    */
+    return EXIT_SUCCESS;
 }

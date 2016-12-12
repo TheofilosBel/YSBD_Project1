@@ -14,8 +14,17 @@ hash.o: hash.c
 main_ex_HT.o: main_ex_HT.c
 	$(CC) $(FLAGS) main_ex_HT.c
 
+# test EH
+t2: $(OBJS2)
+	$(CC) $(OBJS2) $(LIB) -o $(OUT2)
+exhash.o: exhash.c
+	$(CC) $(FLAGS) exhash.c
+main_example_EH.o: main_example_EH.c
+	$(CC) $(FLAGS) main_example_EH.c
+
 
 # clean up
 clean:
 	rm -f $(OBJS1) $(OUT1)
+	rm -f $(OBJS@) $(OUT2)
 

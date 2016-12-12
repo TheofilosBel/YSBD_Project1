@@ -85,13 +85,13 @@ int main(int argc, char **argv) {
     info = open_Index(fileName);
 
     // -- insert entries
-    //insert_Entries(info);
-    EH_InsertEntry(info, record);
+    insert_Entries(info);
+    //EH_InsertEntry(info, record);
 
     // -- get all entries
     char value[20];
     strcpy(value, "Keratsini");
-    get_AllEntries(info, value);
+    //get_AllEntries(info, value);
     // int value = 11903588;
     // get_AllEntries(info, &value);
 

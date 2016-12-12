@@ -12,9 +12,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d372f712-efed-4535-899d-23c71fe9a8d1" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/source files/execHT" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/Makefile" afterPath="$PROJECT_DIR$/source files/Makefile" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/exhash.c" afterPath="$PROJECT_DIR$/source files/exhash.c" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/exhash.h" afterPath="$PROJECT_DIR$/source files/exhash.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source files/main_example_EH.c" afterPath="$PROJECT_DIR$/source files/main_example_EH.c" />
@@ -45,21 +42,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="main_ex_HT.c" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/source files/main_ex_HT.c">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="190">
-              <caret line="71" column="1" lean-forward="false" selection-start-line="71" selection-start-column="1" selection-end-line="76" selection-end-column="25" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="exhash.c" pinned="false" current-in-tab="true">
+      <file leaf-file-name="exhash.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source files/exhash.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="226">
-              <caret line="219" column="29" lean-forward="false" selection-start-line="219" selection-start-column="29" selection-end-line="219" selection-end-column="29" />
+            <state relative-caret-position="328">
+              <caret line="355" column="13" lean-forward="false" selection-start-line="355" selection-start-column="13" selection-end-line="355" selection-end-column="13" />
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
               </folding>
@@ -67,11 +54,21 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="text" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/source files/text">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="395">
+              <caret line="3312" column="2" lean-forward="true" selection-start-line="3312" selection-start-column="2" selection-end-line="3312" selection-end-column="2" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="exhash.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source files/exhash.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="432">
-              <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+            <state relative-caret-position="342">
+              <caret line="28" column="80" lean-forward="false" selection-start-line="28" selection-start-column="80" selection-end-line="28" selection-end-column="80" />
               <folding />
             </state>
           </provider>
@@ -80,8 +77,8 @@
       <file leaf-file-name="main_example_EH.c" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source files/main_example_EH.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="118">
-              <caret line="59" column="1" lean-forward="true" selection-start-line="59" selection-start-column="1" selection-end-line="59" selection-end-column="1" />
+            <state relative-caret-position="712">
+              <caret line="89" column="0" lean-forward="true" selection-start-line="89" selection-start-column="0" selection-end-line="89" selection-end-column="0" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -92,7 +89,7 @@
       <file leaf-file-name="BF.h" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/BF/linux/BF.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="612">
+            <state relative-caret-position="-1224">
               <caret line="34" column="18" lean-forward="false" selection-start-line="34" selection-start-column="8" selection-end-line="34" selection-end-column="18" />
               <folding />
             </state>
@@ -106,10 +103,20 @@
       <find>charValue</find>
       <find>header_info</find>
       <find>fileDesc</find>
+      <find>nextOverflowBlock</find>
+      <find>in Loop</find>
+      <find>In while</find>
+      <find>In temp 1</find>
+      <find>lastIndex</find>
+      <find>In whi</find>
+      <find>num</find>
+      <find>Before</find>
     </findStrings>
     <replaceStrings>
       <replace>header_info-&gt;</replace>
       <replace>header_info-&gt;fileDesc</replace>
+      <replace>index</replace>
+      <replace>localDepth</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -129,6 +136,7 @@
         <option value="$PROJECT_DIR$/source files/exhash.h" />
         <option value="$PROJECT_DIR$/source files/main_example_EH.c" />
         <option value="$PROJECT_DIR$/source files/exhash.c" />
+        <option value="$PROJECT_DIR$/source files/text" />
       </list>
     </option>
   </component>
@@ -457,12 +465,12 @@
       <workItem from="1481365045843" duration="5134000" />
       <workItem from="1481393247777" duration="2201000" />
       <workItem from="1481442446155" duration="19627000" />
-      <workItem from="1481526023813" duration="19437000" />
+      <workItem from="1481526023813" duration="36753000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="87994000" />
+    <option name="totallyTimeSpent" value="105310000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="24" width="1920" height="1056" extended-state="6" />
@@ -504,16 +512,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/BF/main_example_BF.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="720">
-          <caret line="40" column="38" lean-forward="false" selection-start-line="40" selection-start-column="38" selection-end-line="40" selection-end-column="38" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/BF/linux/BF.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="612">
@@ -880,14 +878,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/BF/linux/BF.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="612">
-          <caret line="34" column="18" lean-forward="false" selection-start-line="34" selection-start-column="8" selection-end-line="34" selection-end-column="18" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/source files/hash.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="252">
@@ -904,6 +894,22 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/source files/hash.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1080">
+          <caret line="567" column="52" lean-forward="true" selection-start-line="565" selection-start-column="7" selection-end-line="567" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/BF/linux/BF.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1224">
+          <caret line="34" column="18" lean-forward="false" selection-start-line="34" selection-start-column="8" selection-end-line="34" selection-end-column="18" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/source files/main_ex_HT.c">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="190">
@@ -914,8 +920,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/source files/main_example_EH.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="118">
-          <caret line="59" column="1" lean-forward="true" selection-start-line="59" selection-start-column="1" selection-end-line="59" selection-end-column="1" />
+        <state relative-caret-position="712">
+          <caret line="89" column="0" lean-forward="true" selection-start-line="89" selection-start-column="0" selection-end-line="89" selection-end-column="0" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -924,27 +930,27 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/source files/exhash.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="432">
-          <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source files/hash.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1080">
-          <caret line="567" column="52" lean-forward="true" selection-start-line="565" selection-start-column="7" selection-end-line="567" selection-end-column="52" />
+        <state relative-caret-position="342">
+          <caret line="28" column="80" lean-forward="false" selection-start-line="28" selection-start-column="80" selection-end-line="28" selection-end-column="80" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/source files/exhash.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="226">
-          <caret line="219" column="29" lean-forward="false" selection-start-line="219" selection-start-column="29" selection-end-line="219" selection-end-column="29" />
+        <state relative-caret-position="328">
+          <caret line="355" column="13" lean-forward="false" selection-start-line="355" selection-start-column="13" selection-end-line="355" selection-end-column="13" />
           <folding>
             <element signature="e#0#27#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source files/text">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="395">
+          <caret line="3312" column="2" lean-forward="true" selection-start-line="3312" selection-start-column="2" selection-end-line="3312" selection-end-column="2" />
+          <folding />
         </state>
       </provider>
     </entry>

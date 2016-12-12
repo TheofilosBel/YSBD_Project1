@@ -1,6 +1,6 @@
 typedef struct BlockInfo {
     int bytesInBlock;
-    int nextOverflowBlock;
+    int localDepth;
 } BlockInfo;
 
 typedef struct Record {
@@ -26,7 +26,7 @@ typedef struct {
 
 /* Hash Functions */
 unsigned long hashStr(char *str);
-int doubleHashTable(EH_info *header_info);
+int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord);
 
 /* Record Functions */
 void printRecord(Record* recordptr);

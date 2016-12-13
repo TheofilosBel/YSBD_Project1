@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     // -- insert entries
     insert_Entries(info);
     //EH_InsertEntry(info, record);
-
+/*
     // -- get all entries
     char value[20];
     strcpy(value, "Keratsini");
@@ -103,6 +103,6 @@ int main(int argc, char **argv) {
     free(info->attrName);
     free(info);
     info = NULL;
-    */
+    */  
     return EXIT_SUCCESS;
 }

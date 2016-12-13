@@ -1,3 +1,6 @@
+#ifndef __EX_HASH_H__
+#define __EX_HASH_H__
+
 typedef struct BlockInfo {
     int bytesInBlock;
     int localDepth;
@@ -95,4 +98,4 @@ int EH_GetAllEntries(
 προηγουμένως. Σε περίπτωση επιτυχίας επιστρέφει 0, ενώ σε περίπτωση λάθους επιστρέφει -1. */
 int HashStatistics( char* filename );                   /* όνομα του αρχείου που ενδιαφέρει */
 
-
+#endif

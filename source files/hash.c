@@ -73,7 +73,7 @@ void printDebug(int fileDesc, int blockIndex) {
         flag = 1;
     }
 
-    while (offset < BLOCK_SIZE) {
+    while (offset < tempInfo.bytesInBlock) {
         if (flag == 1) {
             memcpy(&recordTemp, block + offset, sizeof(Record));
             printf("Offset is %d", offset);
@@ -101,7 +101,7 @@ void printDebug(int fileDesc, int blockIndex) {
         printf("bytesInBlock%d = %d\nnextOverflowBlock = %d\n", block_num, tempInfo.bytesInBlock, tempInfo.nextOverflowBlock);
         offset += sizeof(BlockInfo);
 
-        while (offset < BLOCK_SIZE) {
+        while (offset < tempInfo.bytesInBlock) {
             if (flag == 1) {
                 memcpy(&recordTemp, block + offset, sizeof(Record));
                 offset += sizeof(Record);
@@ -415,10 +415,14 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     printf("Next overflow block is %d , b index %d\n", blockInfo->nextOverflowBlock, myBlockIndex);
     while (blockInfo->nextOverflowBlock != -1) {
         myBlockIndex = blockInfo->nextOverflowBlock;
+        /* Gain access to the next overflow block */
         if (BF_ReadBlock(header_info.fileDesc, blockInfo->nextOverflowBlock, &block) < 0) {
             BF_PrintError("Error at insertEntry, when getting block: ");
             return -1;
         }
+        
+        /* Get the block info */
+        memcpy(blockInfo, block, sizeof(BlockInfo));
     }
 
     if (blockInfo->bytesInBlock + sizeof(Record) <= BLOCK_SIZE) {
@@ -533,7 +537,6 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
                     flag = 1;
-                    break;
                 }
             }
             else if (strcmp(hashKey, "name") == 0) {
@@ -541,7 +544,6 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
                     flag = 1;
-                    break;
                 }
             }
             else if (strcmp(hashKey, "surname") == 0) {
@@ -549,7 +551,6 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
                     flag = 1;
-                    break;
                 }
             }
             else if (strcmp(hashKey, "city") == 0) {
@@ -557,7 +558,6 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
                     flag = 1;
-                    break;
                 }
             }
 
@@ -567,7 +567,7 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
         memcpy(blockInfo, block, sizeof(BlockInfo));
         myBlockIndex = blockInfo->nextOverflowBlock;
 
-    }while(myBlockIndex != -1 && !flag );  // If we found it (flag=1) or no more Blocks then end loop
+    }while(myBlockIndex != -1);  // If we found it (flag=1) or no more Blocks then end loop
 
     if (!flag) {
         printf("We could't find any record with the asked value\n");

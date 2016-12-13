@@ -34,6 +34,10 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
 /* Record Functions */
 void printRecord(Record* recordptr);
 
+/* Block Functions */
+
+// copies block src to block dest and inisialize block src to 0 if flag is up. Returns 0 or -1 .
+int copyBlocks(int srcIndex, int destIndex, int fileDesc, int zeroSrc);
 
 
 /* Η συνάρτηση EH_CreateIndex χρησιμοποιείται για τη δημιουργία και την κατάλληλη αρχικοποίηση 

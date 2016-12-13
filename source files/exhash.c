@@ -85,6 +85,47 @@ void printDebug(int fileDesc, int blockIndex) {
     }
 }
 
+int copyBlocks(int srcIndex, int destIndex, int fileDesc, int zeroSrc) {
+    void *temp_src, *temp_dest ;
+
+    temp_dest = malloc(BLOCK_SIZE);
+    temp_src = malloc(BLOCK_SIZE);
+    if (temp_dest == NULL || temp_src == NULL) {
+        fprintf(stderr,"Error at copyBLock : when allocating memory\n");
+    }
+
+    /* Read dest and src */
+    if (BF_ReadBlock(fileDesc,  destIndex, &temp_dest) < 0) {
+        BF_PrintError("Error at copyBlock, when getting block: ");
+        return -1;
+    }
+    if (BF_ReadBlock(fileDesc,  srcIndex, &temp_src) < 0) {
+        BF_PrintError("Error at copyBlock, when getting block: ");
+        return -1;
+    }
+
+    /* Make the copy */
+    memcpy(temp_dest, temp_src, BLOCK_SIZE);
+    if (zeroSrc) {
+        /* Initialise with zeros */
+        memset(temp_src, 0, BLOCK_SIZE);
+    }
+
+    /* Write back blocks */
+    if (BF_WriteBlock(fileDesc,  destIndex) < 0) {
+        BF_PrintError("Error at copyBlock, when writing block: ");
+        return -1;
+    }
+    if (BF_WriteBlock(fileDesc,  srcIndex) < 0) {
+        BF_PrintError("Error at copyBlock, when writing block: ");
+        return -1;
+    }
+
+    return 0;
+}
+
+
+
 /*------------HasH needed Functions-----------------------*/
 unsigned long hashStr(char *str) {
     unsigned long hash = 5381;
@@ -119,7 +160,6 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
         printf("Error allocating memory.\n");
         return -1;
     }
-
     hashKey = malloc((header_info->attrLength + 1) * sizeof(char));
     if (hashKey == NULL) {
         printf("Error allocating memory.\n");
@@ -134,9 +174,14 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
     }
 
     /* Allocate one new block for the new hash table if needed */
-    if (BF_AllocateBlock(header_info->fileDesc) < 0) {
-        BF_PrintError("Error allocating block: ");
-        return -1;
+    blockCounter = BF_GetBlockCounter(header_info->fileDesc);
+    if (blockCounter - 2 > oldBuckets){  // -2 because of block 1 and 2
+
+    } else {  // We need one more block
+        if (BF_AllocateBlock(header_info->fileDesc) < 0) {
+            BF_PrintError("Error allocating block: ");
+            return -1;
+        }
     }
     newBlockIndex = BF_GetBlockCounter(header_info->fileDesc)-1;
 
@@ -161,13 +206,11 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
 
     /* Hash each record in Block index*/
     offset = sizeof(BlockInfo);
-    //for (j = 0; j < (blockInfo->bytesInBlock - sizeof(BlockInfo)) / sizeof(int); j++) {
     for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
         memcpy(&record, block + offset, sizeof(Record));  // read the record
         //printf("\nIn double: for loop\n");
         printRecord(&record);
 
-        //printf("The j is %d\n",j);
         fflush(stdout);
         strcpy(hashKey, header_info->attrName);
         if (strcmp(hashKey, "id") == 0){}
@@ -322,7 +365,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
 
     /* Update block info struct */
     blockInfo->localDepth = -1;  // Local Depth is for these block a pointer
-    blockInfo->bytesInBlock = numWriten*sizeof(int) + blockInfo->bytesInBlock;
+    //blockInfo->bytesInBlock = numWriten*sizeof(int) + blockInfo->bytesInBlock;
     if (hashTableBlocks >= 1) {
         blockInfo->localDepth = BF_GetBlockCounter(header_info->fileDesc);
     }
@@ -741,6 +784,8 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
         }
     }
     else {
+        printDebug(header_info->fileDesc, 1);
+
         doubleHashTable(header_info, myBlockIndex, &record);
         if (blockInfo->localDepth < header_info->depth) {
             /*

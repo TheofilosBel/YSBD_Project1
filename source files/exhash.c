@@ -226,7 +226,9 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
         return -1;
     }
 
-    /* Allocate one new block ,that we sure need for the hash table (to write ints), or to write new records */
+    /* Allocate one new block ,that we sure need for the
+     * hash table (to write ints), or to write new records
+     */
 
     /* Read block 1 to find out where the rest of hastable is */
     if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
@@ -241,7 +243,6 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
      */
     if (blockInfo->localDepth != -1) {
 
-        /* But we need one, to copy the old one that used to hold ints from the hash table */
         if (BF_AllocateBlock(header_info->fileDesc) < 0) {
             BF_PrintError("Error allocating block: ");
             return -1;
@@ -265,10 +266,9 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
                     BF_PrintError("Error at doubleHashTable, when writing block back a");
                     return -1;
                 }
-            } else {
-
             }
-            /* Copy it to the next which is the last allocated block */
+
+            /* Copy it to the block before */
             copyBlocks(back_index - 1, back_index, header_info->fileDesc, 0);
             back_index--;
         }
@@ -328,14 +328,14 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     }
     memcpy(blockInfo, block, sizeof(BlockInfo));
 
-    /* Hash each record in Block index*/
+    /* Hash each record in Block index and the coollision record */
     offset = sizeof(BlockInfo);
     for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
-        memcpy(&record, block + offset, sizeof(Record));  // read the record
-        //printf("\nIn double: for loop\n");
-        printRecord(&record);
 
-        fflush(stdout);
+        /* Get the record */
+        memcpy(&record, block + offset, sizeof(Record));  // read the record
+        printRecord(&record);
+        /* Choose the hashing Key*/
         strcpy(hashKey, header_info->attrName);
         if (strcmp(hashKey, "id") == 0){}
             //hashIndex = hashInt(record.id);
@@ -346,7 +346,6 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
         else if (strcmp(hashKey, "city") == 0)
             hashIndex = hashStr(record.city);
 
-        //offset += sizeof(Record);
 
         /* Keep the depth+1 least significant bits */
         hashIndex = (hashIndex % x_to_the_n(2, header_info->depth + 1));
@@ -363,6 +362,30 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
         //printf("That hashes in index %ld\n", hashIndex);
     }
 
+    /* Add the collision record to the write block */
+    printf("Collision Block\n");
+    printRecord(collisionRecord);
+    printf("\n");
+    strcpy(hashKey, header_info->attrName);
+    if (strcmp(hashKey, "id") == 0){}
+        //hashIndex = hashInt(collisionRecord->id);
+    else if (strcmp(hashKey, "name") == 0)
+        hashIndex = hashStr(collisionRecord->name);
+    else if (strcmp(hashKey, "surname") == 0)
+        hashIndex = hashStr(collisionRecord->surname);
+    else if (strcmp(hashKey, "city") == 0)
+        hashIndex = hashStr(collisionRecord->city);
+    /* Keep the depth+1 least significant bits */
+    hashIndex = (hashIndex % x_to_the_n(2, header_info->depth + 1));
+    /* Place it to the writhe temp array */
+    if (hashIndex == blockIndex - 2) {
+        memcpy(&temp1RecordArray[bytesInArray1], collisionRecord, sizeof(Record));
+        bytesInArray1++;
+    }
+    else if (hashIndex == blockIndex - 2 + oldBuckets) {
+        memcpy(&temp2RecordArray[bytesInArray2], collisionRecord, sizeof(Record));
+        bytesInArray2++;
+    }
 
 
     /* Debug printing*/
@@ -411,7 +434,6 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     /* Initialise block info - Initialise localDepth - Write the records */
     blockInfo->bytesInBlock = sizeof(BlockInfo) + bytesInArray2*sizeof(Record);
     blockInfo->localDepth = header_info->depth + 1;
-    //printf("We took %d %d\n", blockInfo->bytesInBlock, blockInfo->localDepth);
     memcpy(block, blockInfo, sizeof(BlockInfo));
     memcpy(block + sizeof(BlockInfo), temp2RecordArray, bytesInArray2*sizeof(Record));
 
@@ -450,7 +472,6 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
 
     /* Get the hash Table in memory*/
     int * hashTable;
-    int size = oldBuckets;
     hashTable = getHashTableFromBlock(header_info);
 
     /* Calculate how many more blocks we need for the doubling of the hash table */
@@ -517,7 +538,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
         while( numWritenInloop < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && (numWriten < oldBuckets)) {
 
             //printf("Block idnex %d %d %d\n", newBlockIndex, blockIndex, numWriten);
-            if (numWriten + 1 == blockIndex - 2) {  // here goes the new block for records
+            if (numWriten + 1 == blockIndex -2) {  // here goes the new block for records
                 memcpy(block + offset, &newBlockIndex, sizeof(int));
             } else {
                 memcpy(block + offset, &hashTable[numWriten], sizeof(int));
@@ -886,6 +907,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     }
     else {
         if (blockInfo->localDepth < header_info->depth) {
+#ifdef _COM_
             /* Case where local_depth < global_depth */
 
             /* Allocate a new block at the end of the file */
@@ -1028,11 +1050,11 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
             printDebug(header_info->fileDesc, myBlockIndex);
             printDebug(header_info->fileDesc, newBlockIndex);
-
+#endif
         }
         else {
             /* Case where we need to double the hash table in size */
-            //doubleHashTable(header_info, myBlockIndex, &record);
+            doubleHashTable(header_info, myBlockIndex, &record);
         }
     }
 
@@ -1043,8 +1065,8 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     free(hashKey);
     free(blockInfo);
     free(tempBlockInfo);
-    free(temp1RecordArray);
-    free(temp2RecordArray);
+    //free(temp1RecordArray);
+    //free(temp2RecordArray);
 
     return 0;
 }

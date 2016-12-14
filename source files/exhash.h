@@ -4,6 +4,7 @@
 typedef struct BlockInfo {
     int bytesInBlock;
     int localDepth;
+    int nextOverflowIndex;
 } BlockInfo;
 
 typedef struct Record {

@@ -57,7 +57,6 @@ int* getHashTableFromBlock(EH_info *infoPtr){
 
         offset = 0;
         memcpy(&tempInfo, block, sizeof(BlockInfo));
-        printf("bytesInBlock%d = %d\nlocalDepth = %d\n", block_num, tempInfo.bytesInBlock, tempInfo.localDepth);
         offset += sizeof(BlockInfo);
 
         while (offset < tempInfo.bytesInBlock && numsInHashTable < size) {
@@ -204,6 +203,8 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
     int bytesInArray1 = 0, bytesInArray2 = 0;    /* Counter of written records in each array */
     Record *temp1RecordArray, *temp2RecordArray; /* Arrays of records to store temporary data */
 
+    printf("\n-------IN DOUBLE-------\n");
+
     /* Initialise with zeros */
     memset(zeroArray, 0, BLOCK_SIZE);
 
@@ -226,15 +227,17 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
     }
 
     /* Allocate one new block ,that we sure need for the hash table (to write ints), or to write new records */
+    /* Read block 1 to find out where the rest of hastable is */
+    if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
+        BF_PrintError("Error at doubleHashTable, when getting block: ");
+        return -1;
+    }
+    memcpy(blockInfo, block, sizeof(BlockInfo));
     blockCounter = BF_GetBlockCounter(header_info->fileDesc);
-    if (blockCounter - 2 > oldBuckets) {  // -2 because of block0 and 1 . If we have enough block then don't allocate
+    printf("Block counter before allocating %d and depth %d\n", BF_GetBlockCounter(header_info->fileDesc)-1, header_info->depth);
 
-        /* Read block 1 to find out where the rest of hastable is */
-        if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
-            BF_PrintError("Error at doubleHashTable, when getting block: ");
-            return -1;
-        }
-        memcpy(blockInfo, block, sizeof(BlockInfo));
+
+    if (blockInfo->localDepth != -1) {  // If block 1 has a pointer then we need to copy
 
         /* But we need one, to copy the old one that used to hold ints from the hash table */
         if (BF_AllocateBlock(header_info->fileDesc) < 0) {
@@ -302,6 +305,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
         }
         newBlockIndex = BF_GetBlockCounter(header_info->fileDesc)-1;
     }
+    printf("Block for records is %d and blc %d\n", newBlockIndex, BF_GetBlockCounter(header_info->fileDesc)-1);
 
     /* Before writing the indices split the records to of blockIndex to 2 block.
      * Assuming depth is the old depth, before adding 1 , and localIndex is the conflict block.
@@ -354,11 +358,11 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
             memcpy(&temp2RecordArray[bytesInArray2], &record, sizeof(Record));
             bytesInArray2++;
         }
-        printf("That hashes in index %ld\n", hashIndex);
+        //printf("That hashes in index %ld\n", hashIndex);
     }
 
     /* Debug printing*/
-    printf("\nIn temp 1\n");
+    printf("\nIn temp 1---------\n");
     for (j = 0 ; j < bytesInArray1 ; j++) {
         if (j < bytesInArray1) {
             printRecord(&temp1RecordArray[j]);
@@ -372,6 +376,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
             printf("\n");
         }
     }
+    printf("\n---------\n");
     fflush(stdout);
 
     /* Write temp1RecordArray to block with index blockIndex */
@@ -442,11 +447,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
     /* Get the hash Table in memory*/
     int * hashTable;
     int size = oldBuckets;
-
     hashTable = getHashTableFromBlock(header_info);
-    for (int i = 0; i < size; i++){
-        printf("HashTable[%d] = %d\n", i, hashTable[i]);
-    }
 
     /* Calculate how many more blocks we need for the doubling of the hash table */
     int numsLeftToWrite = (BLOCK_SIZE - blockInfo->bytesInBlock) / sizeof(int);
@@ -508,9 +509,10 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
         /* Write to overflow block */
         offset = sizeof(BlockInfo);
 
+        printf("Block counter befor writing is %d\n", BF_GetBlockCounter(header_info->fileDesc)-1);
         while( numWritenInloop < ((BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int)) && (numWriten < oldBuckets)) {
 
-            printf("Block idnex %d %d %d\n", newBlockIndex, blockIndex, numWriten);
+            //printf("Block idnex %d %d %d\n", newBlockIndex, blockIndex, numWriten);
             if (numWriten + 1 == blockIndex - 2) {  // here goes the new block for records
                 memcpy(block + offset, &newBlockIndex, sizeof(int));
             } else {
@@ -542,6 +544,9 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
     /* Update the depth in info header and block 0 */
     header_info->depth++;
 
+    printf("\n-------out of DOUBLE-------\n");
+
+    free(hashTable);
     free(hashKey);
     free(blockInfo);
 
@@ -791,8 +796,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     unsigned long hashIndex; /* The value returned by the hash function */
     int myBlockIndex;
     int buckets = x_to_the_n(2, header_info->depth); /* Initially we have 2^depth buckets */
-    int numsInEachBlock;     /* Number of integers that can fit in each block */
-    int indexOffset = 0;     /* Offset inside a block of the block index we are searching for */
+    int *hashTable;         /* We will bring hashTable to main mem for easier indexing */
     BlockInfo *blockInfo;
     void *block;
 
@@ -816,9 +820,9 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % buckets) + 2;
 
-    //printf("\nIn insert\n");
+    printf("\nIn insert\n");
     //printRecord(&record);
-    //printf("HashIndex is %ld\n", hashIndex);
+    printf("HashIndex is %ld\n", hashIndex);
 
     blockInfo = malloc(sizeof(BlockInfo));
     if (blockInfo == NULL) {
@@ -826,18 +830,13 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
         return -1;
     }
 
-    /* Find the block in which the hash index is stored as part of the hash table */
-    numsInEachBlock = (BLOCK_SIZE - sizeof(BlockInfo)) / sizeof(int);
-    myBlockIndex = hashIndex / numsInEachBlock;
-    if (hashIndex % numsInEachBlock != 0) {
-        myBlockIndex++;
-    }
-    //printf("My block index0 is %d\n", myBlockIndex);
-    /* If it is not in the first block then it is in a block at the end of the file */
-    if (myBlockIndex > 1) {
-        myBlockIndex--; /* Remove block 1 from count */
-        myBlockIndex = buckets + 2 + myBlockIndex - 1;
-    }
+    /* Get hash table in mm*/
+    hashTable = getHashTableFromBlock(header_info);
+    /* Get the block Index for the record (which is a hashTableValue) */
+    myBlockIndex = hashTable[hashIndex-2];
+    printf("Hash table values is :%d\n", myBlockIndex);
+
+
     //printf("My block index1 is %d, blc %d\n", myBlockIndex, BF_GetBlockCounter(header_info->fileDesc));
 
     /* Read that block */
@@ -847,22 +846,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
         return -1;
     }
 
-    /*
-     * Get the block index to insert the record
-     * hashIndex starts from the indexOffset byte inside the block (-2 -> because numbers start from 2)
-     */
-    indexOffset = (hashIndex % numsInEachBlock - 2)*sizeof(int) + sizeof(BlockInfo);
-    //printf("Index offset is %d\n", indexOffset);
-    memcpy(&myBlockIndex, block + indexOffset, sizeof(int));
-    //printf("My block index2 is %d\n", myBlockIndex);
-    fflush(stdout);
-
-    /* Gain access to the bucket with index myBlockIndex */
-    if (BF_ReadBlock(header_info->fileDesc, myBlockIndex, &block) < 0) {
-        BF_PrintError("Error at insertEntry, when getting block: ");
-        return -1;
-    }
-
+    /* Take its info */
     memcpy(blockInfo, block, sizeof(BlockInfo));
 
     /*
@@ -904,8 +888,11 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
     //printDebug(header_info->fileDesc, myBlockIndex);
 
+    printf("\n out of insert \n");
+    free(hashTable);
     free(hashKey);
     free(blockInfo);
+
 
     return 0;
 }

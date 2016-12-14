@@ -795,6 +795,7 @@ int EH_CloseIndex(EH_info* header_info) {
 int EH_InsertEntry(EH_info* header_info, Record record) {
     char *hashKey;           /* The key passed to the hash function */
     unsigned long hashIndex; /* The value returned by the hash function */
+    unsigned long newHashIndex;
     int myBlockIndex, newBlockIndex, i, offset, hashTableBlocks;
     int buckets = x_to_the_n(2, header_info->depth); /* Initially we have 2^depth buckets */
     int *hashTable;          /* We will bring hashTable to main mem for easier indexing */
@@ -960,8 +961,18 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
                 memcpy(&record, block + offset, sizeof(Record));
 
+                /* Hash each record again */
+                if (strcmp(hashKey, "id") == 0) {}
+                    //newHashIndex = hashInt(record.id);
+                else if (strcmp(hashKey, "name") == 0)
+                    newHashIndex = hashStr(record.name);
+                else if (strcmp(hashKey, "surname") == 0)
+                    newHashIndex = hashStr(record.surname);
+                else if (strcmp(hashKey, "city") == 0)
+                    newHashIndex = hashStr(record.city);
+
                 /* Keep the depth+1 least significant bits */
-                hashIndex = hashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
+                newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
 
                 /* Split the records into two temporary arrays */
                 if (hashIndex <= myBlockIndex) {

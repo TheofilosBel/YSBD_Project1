@@ -873,7 +873,6 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     else {
         printDebug(header_info->fileDesc, 1);
 
-        doubleHashTable(header_info, myBlockIndex, &record);
         if (blockInfo->localDepth < header_info->depth) {
             /*
              * Case where local_depth < global_depth
@@ -882,7 +881,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
         }
         else {
             /* Case where we need to double the hash table in size */
-            //doubleHashTable(header_info, myBlockIndex, &record);
+            doubleHashTable(header_info, myBlockIndex, &record);
         }
     }
 

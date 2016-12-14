@@ -188,7 +188,7 @@ unsigned long hashStr(char *str) {
     return hash;
 }
 
-int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord) {
+int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecord) {
     int myBlockIndex, offset, j, numWriten, blockCounter;
     int hashTableBlocks ;
     int newBlockIndex;  // Holds the index of the block we will use to insert new records
@@ -227,17 +227,19 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
     }
 
     /* Allocate one new block ,that we sure need for the hash table (to write ints), or to write new records */
+
     /* Read block 1 to find out where the rest of hastable is */
     if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
         BF_PrintError("Error at doubleHashTable, when getting block: ");
         return -1;
     }
     memcpy(blockInfo, block, sizeof(BlockInfo));
-    blockCounter = BF_GetBlockCounter(header_info->fileDesc);
     printf("Block counter before allocating %d and depth %d\n", BF_GetBlockCounter(header_info->fileDesc)-1, header_info->depth);
 
-
-    if (blockInfo->localDepth != -1) {  // If block 1 has a pointer then we need to copy
+    /* If block 1 has a pointer then we can give this block for Records
+     * and allocate another one to copy the rest of the hashTable there.
+     */
+    if (blockInfo->localDepth != -1) {
 
         /* But we need one, to copy the old one that used to hold ints from the hash table */
         if (BF_AllocateBlock(header_info->fileDesc) < 0) {
@@ -360,6 +362,8 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord
         }
         //printf("That hashes in index %ld\n", hashIndex);
     }
+
+
 
     /* Debug printing*/
     printf("\nIn temp 1---------\n");

@@ -41,11 +41,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="exhash.c" pinned="false" current-in-tab="false">
+      <file leaf-file-name="exhash.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/source files/exhash.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="432">
-              <caret line="240" column="0" lean-forward="true" selection-start-line="240" selection-start-column="0" selection-end-line="240" selection-end-column="0" />
+            <state relative-caret-position="352">
+              <caret line="351" column="5" lean-forward="false" selection-start-line="351" selection-start-column="5" selection-end-line="351" selection-end-column="5" />
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
               </folding>
@@ -53,11 +53,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="text" pinned="false" current-in-tab="true">
+      <file leaf-file-name="text" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source files/text">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="397">
-              <caret line="2808" column="3" lean-forward="true" selection-start-line="2808" selection-start-column="3" selection-end-line="2808" selection-end-column="3" />
+            <state relative-caret-position="418339">
+              <caret line="26737" column="0" lean-forward="false" selection-start-line="26737" selection-start-column="0" selection-end-line="26737" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -122,6 +122,7 @@
       <find>index</find>
       <find>Before err</find>
       <find>D</find>
+      <find>132</find>
     </findStrings>
     <replaceStrings>
       <replace>header_info-&gt;</replace>
@@ -481,12 +482,12 @@
       <workItem from="1481442446155" duration="19627000" />
       <workItem from="1481526023813" duration="36753000" />
       <workItem from="1481661862536" duration="14269000" />
-      <workItem from="1481707651896" duration="5716000" />
+      <workItem from="1481707651896" duration="8842000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="125295000" />
+    <option name="totallyTimeSpent" value="128421000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="24" width="1920" height="1056" extended-state="6" />
@@ -908,21 +909,21 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/source files/exhash.c">
+    <entry file="file://$PROJECT_DIR$/source files/text">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="432">
-          <caret line="240" column="0" lean-forward="true" selection-start-line="240" selection-start-column="0" selection-end-line="240" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#27#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="418339">
+          <caret line="26737" column="0" lean-forward="false" selection-start-line="26737" selection-start-column="0" selection-end-line="26737" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/source files/text">
+    <entry file="file://$PROJECT_DIR$/source files/exhash.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="397">
-          <caret line="2808" column="3" lean-forward="true" selection-start-line="2808" selection-start-column="3" selection-end-line="2808" selection-end-column="3" />
-          <folding />
+        <state relative-caret-position="352">
+          <caret line="351" column="5" lean-forward="false" selection-start-line="351" selection-start-column="5" selection-end-line="351" selection-end-column="5" />
+          <folding>
+            <element signature="e#0#27#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

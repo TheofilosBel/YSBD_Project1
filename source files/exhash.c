@@ -795,7 +795,7 @@ int EH_CloseIndex(EH_info* header_info) {
 int EH_InsertEntry(EH_info* header_info, Record record) {
     char *hashKey;           /* The key passed to the hash function */
     unsigned long hashIndex; /* The value returned by the hash function */
-    int myBlockIndex, newBlockIndex, i, offset;
+    int myBlockIndex, newBlockIndex, i, offset, hashTableBlocks;
     int buckets = x_to_the_n(2, header_info->depth); /* Initially we have 2^depth buckets */
     int *hashTable;          /* We will bring hashTable to main mem for easier indexing */
     Record tempRecord;
@@ -1011,7 +1011,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 return -1;
             }
 
-            printDebug(header_info->fileDesc, blockIndex);
+            printDebug(header_info->fileDesc, myBlockIndex);
             printDebug(header_info->fileDesc, newBlockIndex);
 
         }

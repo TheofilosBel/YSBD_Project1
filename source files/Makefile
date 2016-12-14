@@ -26,5 +26,5 @@ main_example_EH.o: main_example_EH.c
 # clean up
 clean:
 	rm -f $(OBJS1) $(OUT1)
-	rm -f $(OBJS@) $(OUT2)
+	rm -f $(OBJS2) $(OUT2)
 

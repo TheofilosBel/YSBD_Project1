@@ -1164,12 +1164,16 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                            header_info->fileDesc, 0);
             }
 
+            /* Update newBlockIndex since the empty block has been moved */
+            newBlockIndex -= hashTableBlocks;
+
             /* Update the block pointers - Increase by one except for the last one */
             if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
                 BF_PrintError("Error at insertEntry, when getting block: ");
                 return -1;
             }
 
+            currentBlockIndex = 1;
             memcpy(tempBlockInfo, block, sizeof(BlockInfo));
             if (tempBlockInfo->nextOverflowIndex != -1) {
                 tempBlockInfo->nextOverflowIndex += 1;
@@ -1194,6 +1198,55 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                     tempBlockInfo->nextOverflowIndex += 1;
                     memcpy(block, tempBlockInfo, sizeof(BlockInfo));
                 }
+
+                /* Write back block */
+                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
+                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                    return -1;
+                }
+            }
+
+            /* Add the index of the new block in the hash table */
+            if (BLOCK_SIZE - tempBlockInfo->bytesInBlock >= sizeof(int)) {
+                memcpy(block + tempBlockInfo->bytesInBlock, &newBlockIndex, sizeof(int));
+                tempBlockInfo->bytesInBlock += sizeof(int);
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+
+                /* Write back block */
+                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
+                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                    return -1;
+                }
+            }
+            else {
+                /* Allocate a new block for the hash table at the end of the file */
+                if (BF_AllocateBlock(header_info->fileDesc) < 0) {
+                    BF_PrintError("Error allocating block: ");
+                    return -1;
+                }
+
+                tempBlockInfo->nextOverflowIndex = BF_GetBlockCounter(header_info->fileDesc) - 1;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                /* Write back block */
+                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
+                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                /* Read the new block */
+                currentBlockIndex = tempBlockInfo->nextOverflowIndex;
+                if (BF_ReadBlock(header_info->fileDesc, currentBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at insertEntry, when getting block: ");
+                    return -1;
+                }
+
+                /* Initialise the block */
+                tempBlockInfo->bytesInBlock = sizeof(BlockInfo);
+                tempBlockInfo->localDepth = 0;
+                tempBlockInfo->nextOverflowIndex = -1;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                memcpy(block + tempBlockInfo->bytesInBlock, &newBlockIndex, sizeof(int));
+                tempBlockInfo->bytesInBlock += sizeof(int);
 
                 /* Write back block */
                 if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
@@ -1244,8 +1297,29 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 }
             }
 
-            if (recordsInArray2 == 0 || recordsInArray1 == 0) {
-                printf("Overflow\n");
+            /* Hash the new record */
+            if (strcmp(hashKey, "id") == 0)
+                newHashIndex = hashInt(record.id);
+            else if (strcmp(hashKey, "name") == 0)
+                newHashIndex = hashStr(record.name);
+            else if (strcmp(hashKey, "surname") == 0)
+                newHashIndex = hashStr(record.surname);
+            else if (strcmp(hashKey, "city") == 0)
+                newHashIndex = hashStr(record.city);
+            newHashIndex += 2;
+            /* Keep the depth+1 least significant bits */
+            newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
+
+            /*
+             * If array1 has no records and the new record hashes
+             * to the new block too then the new block will overflow
+             * OR
+             * If array2 has no records and the new record hashes
+             * to the old block too then the old block will overflow
+             */
+            if ((recordsInArray1 == 0 && newHashIndex > myBlockIndex) ||
+                (recordsInArray2 == 0 && newHashIndex <= myBlockIndex)) {
+                /* overflow to newBlockIndex */
             }
             else {
                 /* Write temp1RecordArray to block with index myBlockIndex */

@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
     // -- get all entries
     char value[20];
     strcpy(value, "Keratsini");
-    //get_AllEntries(info, value);
+    get_AllEntries(info, value);
     // int value = 11903588;
     // get_AllEntries(info, &value);
 

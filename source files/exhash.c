@@ -351,9 +351,9 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     //printf("size %d\n",sizeOftemparray);
     //printDebug(header_info->fileDesc, blockIndex);
     //printf("\n");
-
-    temp1RecordArray = malloc(sizeOftemparray);
-    temp2RecordArray = malloc(sizeOftemparray);
+    /**/
+    temp1RecordArray = malloc((size_t)sizeOftemparray);
+    temp2RecordArray = malloc((size_t)sizeOftemparray);
     if (temp1RecordArray == NULL || temp2RecordArray == NULL) {
         printf("Error allocating memory.\n");
         return -1;
@@ -401,7 +401,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
             
             /* increase offset */
             offset += sizeof(Record);
-            printf("That hashes in index %ld , %d, %d\n", hashIndex, blockIndex - 2, hashIndex4CollisionBlock);
+            printf("That hashes in index %ld , %d, %ld\n", hashIndex, blockIndex - 2, hashIndex4CollisionBlock);
         }
         
         /* Read the next block if there is one */
@@ -1027,17 +1027,18 @@ EH_info* EH_OpenIndex(char *fileName) {
 } 
 
 int EH_CloseIndex(EH_info* header_info) {
+
+    /*
     int * hashTable = getHashTableFromBlock(header_info);
     int hashval;
     int i;
-
     for (i = 0 ; i < x_to_the_n(2, header_info->depth) ; i++) {
         hashval = hashTable[i];
         printf("\nHashTable[%d] = %d\nPrinting hashed records\n\n", i, hashval);
         fflush(stdout);
         printDebug(header_info->fileDesc, hashval);
         printf("\n");
-    }
+    }*/
 
     if (BF_CloseFile(header_info->fileDesc) < 0) {
         BF_PrintError("Error at CloseIndex, when closing file: \n");
@@ -1054,12 +1055,13 @@ int EH_CloseIndex(EH_info* header_info) {
 
 int EH_InsertEntry(EH_info* header_info, Record record) {
     char *hashKey;           /* The key passed to the hash function */
-    unsigned long hashIndex; /* The value returned by the hash function */
-    unsigned long newHashIndex;
+    unsigned long hashIndex = 0; /* The value returned by the hash function */
+    unsigned long newHashIndex = 0;
     int myBlockIndex, newBlockIndex, currentBlockIndex, i, offset, hashTableBlocks;
     int buckets = x_to_the_n(2, header_info->depth); /* Initially we have 2^depth buckets */
     int *hashTable;          /* We will bring hashTable to main mem for easier indexing */
     Record tempRecord;
+    char notFitInBucket = 0;  /* Flag that shows whether a records fits in a bucket or not */
     int recordsInArray1 = 0, recordsInArray2 = 0; /* Counter of written records in each array */
     Record *temp1RecordArray, *temp2RecordArray;  /* Arrays of records to store temporary data */
     BlockInfo *blockInfo, *tempBlockInfo;
@@ -1105,10 +1107,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     hashTable = getHashTableFromBlock(header_info);
     /* Get the block Index for the record (which is a hashTableValue) */
     myBlockIndex = hashTable[hashIndex-2];
-    printf("Hash table values is :%d and hashIndex :%d\n", myBlockIndex, hashIndex);
-
-
-    //printf("My block index1 is %d, blc %d\n", myBlockIndex, BF_GetBlockCounter(header_info->fileDesc));
+    printf("Hash table values is :%d and hashIndex :%ld\n", myBlockIndex, hashIndex);
 
     /* Read that block */
     if (BF_ReadBlock(header_info->fileDesc, myBlockIndex, &block) < 0) {
@@ -1118,28 +1117,50 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
     /* Take its info */
     memcpy(blockInfo, block, sizeof(BlockInfo));
-    printf("Its depth is %d and global depth is %d\n", blockInfo->localDepth, header_info->depth);
 
     /*
      * Insert the entry in block we hashed.
      * If a block is full then double the size of the table (depth++)
      */
-    if (blockInfo->bytesInBlock + sizeof(Record) <= BLOCK_SIZE) {
-        /* Write the record */
-        memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
 
-        /* Update the block info */
-        blockInfo->bytesInBlock += sizeof(Record);
-        memcpy(block, blockInfo, sizeof(BlockInfo));
+    printf("Its depth is %d and global depth is %d\n", blockInfo->localDepth, header_info->depth);
+    //printf("Also in block %d\n", myBlockIndex);
+    //printDebug(header_info->fileDesc,myBlockIndex);
+    /* Check the block and its overflow blocks*/
+    do {
+        notFitInBucket = 1;
+        if (blockInfo->bytesInBlock + sizeof(Record) <= BLOCK_SIZE) {
+            /* Write the record */
+            memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
 
-        /* Write back block */
-        if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0){
-            BF_PrintError("Error at insertEntry, when writing block back: ");
-            return -1;
+            /* Update the block info */
+            blockInfo->bytesInBlock += sizeof(Record);
+            memcpy(block, blockInfo, sizeof(BlockInfo));
+
+            /* Write back block */
+            if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0) {
+                BF_PrintError("Error at insertEntry, when writing block back: ");
+                return -1;
+            }
+            /* It fits in here */
+            notFitInBucket = 0;
+            break;
         }
-    }
-    else {
+        /* Read the next block if there is one */
+        if ( blockInfo->nextOverflowIndex != -1 ) {
+            if (BF_ReadBlock(header_info->fileDesc, blockInfo->nextOverflowIndex, &block) < 0) {
+                BF_PrintError("Error at insertEntry, when getting block: ");
+                return -1;
+            }
+            memcpy(blockInfo, block, sizeof(BlockInfo));
+        }
+    }while ( blockInfo->nextOverflowIndex != -1 );
+
+    /* If it doesn't fit the split or double*/
+    if (notFitInBucket) {
         if (blockInfo->localDepth < header_info->depth) {
+
+            printf("-------IN SPLIT-------\n");
             /* Case where local_depth < global_depth */
 
             /* Allocate a new block at the end of the file */
@@ -1268,13 +1289,14 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 return -1;
             }
 
+            int oldHashIndex = hashIndex;  // change : prosthesa to oldHashIndex
             offset = sizeof(BlockInfo);
             for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
                 memcpy(&tempRecord, block + offset, sizeof(Record));
 
                 /* Hash each record again */
                 if (strcmp(hashKey, "id") == 0)
-                    newHashIndex = hashInt(tempRecord.id);
+                    newHashIndex = (unsigned long)hashInt(tempRecord.id);
                 else if (strcmp(hashKey, "name") == 0)
                     newHashIndex = hashStr(tempRecord.name);
                 else if (strcmp(hashKey, "surname") == 0)
@@ -1286,20 +1308,24 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 /* Keep the depth+1 least significant bits */
                 newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
 
+                // change : debug prints
+                printRecord(&tempRecord);
+                printf("->That hashes in index %ld\n", newHashIndex);
+
                 /* Split the records into two temporary arrays */
-                if (newHashIndex <= myBlockIndex) {
-                    memcpy(&temp1RecordArray[recordsInArray1], &record, sizeof(Record));
+                if (newHashIndex <= oldHashIndex) {  // change : alla3a to blockIndex me to oldHashIndex pou einai to panw hasIndex
+                    memcpy(&temp1RecordArray[recordsInArray1], &tempRecord, sizeof(Record));  // change : edw egrafes to record kai oxi tempRecord
                     recordsInArray1++;
                 }
                 else {
-                    memcpy(&temp2RecordArray[recordsInArray2], &record, sizeof(Record));
+                    memcpy(&temp2RecordArray[recordsInArray2], &tempRecord, sizeof(Record));
                     recordsInArray2++;
                 }
             }
 
             /* Hash the new record */
             if (strcmp(hashKey, "id") == 0)
-                newHashIndex = hashInt(record.id);
+                newHashIndex = (unsigned long)hashInt(record.id);
             else if (strcmp(hashKey, "name") == 0)
                 newHashIndex = hashStr(record.name);
             else if (strcmp(hashKey, "surname") == 0)
@@ -1309,6 +1335,25 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             newHashIndex += 2;
             /* Keep the depth+1 least significant bits */
             newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
+
+            /* change : Debug printing*/
+            int j ;
+            printf("\nIn temp 1---------\n");
+            for (j = 0 ; j < recordsInArray1 ; j++) {
+                if (j < recordsInArray1) {
+                    printRecord(&temp1RecordArray[j]);
+                    printf("\n");
+                }
+            }
+            printf("\nIn temp 2\n");
+            for (j = 0 ; j < recordsInArray2 ; j++) {
+                if (j < recordsInArray2) {
+                    printRecord(&temp2RecordArray[j]);
+                    printf("\n");
+                }
+            }
+            printf("\n---------\n");
+            fflush(stdout);
 
             /*
              * If array1 has no records and the new record hashes
@@ -1360,6 +1405,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 printDebug(header_info->fileDesc, myBlockIndex);
                 printDebug(header_info->fileDesc, newBlockIndex);
             }
+            printf("-------Out of SPLIT-------\n");
         }
         else {
             /* Case where we need to double the hash table in size */
@@ -1382,8 +1428,115 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
 
 int EH_GetAllEntries(EH_info header_info, void *value) {
+    char *hashKey, *stringValue;           /* The key passed to the hash function */
+    unsigned long hashIndex = 0; /* The value returned by the hash function */
+    int myBlockIndex, *intValue, blockCounter = 0, offset, flag = 0, *hashTable;
+    BlockInfo *blockInfo;
+    Record record;
+    void *block;
 
-    return -1;
+    /* Check weather value is an int or a string and cast it */
+    if (header_info.attrType == 'c'){
+        stringValue = (char *)value;
+    } else if (header_info.attrType == 'i') {
+        intValue = (int *)value;
+    }
+
+    hashKey = malloc((header_info.attrLength + 1) * sizeof(char));
+    if (hashKey == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    /* Chose whether to hash based on an int or a string */
+    strcpy(hashKey, header_info.attrName);
+    if (strcmp(hashKey, "id") == 0)
+        hashIndex = (unsigned long)hashInt(*intValue);
+    else if (strcmp(hashKey, "name") == 0)
+        hashIndex = hashStr(stringValue);
+    else if (strcmp(hashKey, "surname") == 0)
+        hashIndex = hashStr(stringValue);
+    else if (strcmp(hashKey, "city") == 0)
+        hashIndex = hashStr(stringValue);
+
+    /* We can't enter records in the first two buckets */
+    hashIndex = (hashIndex % x_to_the_n(2,header_info.depth)) + 2;
+
+    blockInfo = malloc(sizeof(BlockInfo));
+    if (blockInfo == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    /* Look for the record that holds the asked value */
+    /* Get hash table in mm*/
+    hashTable = getHashTableFromBlock(&header_info);
+    /* Get the block Index for the record (which is a hashTableValue) */
+    myBlockIndex = hashTable[hashIndex-2];
+    printf("In get all entries Hash table values is :%d and hashIndex :%ld\n", myBlockIndex, hashIndex);
+
+    do{
+        /* Read Block */
+        if (BF_ReadBlock(header_info.fileDesc, myBlockIndex, &block) < 0) {
+            BF_PrintError("Error at getAllEntries, when getting block: ");
+            return -1;
+        }
+
+        /* initialize the vars for the loop */
+        offset = sizeof(BlockInfo);
+        blockCounter++;
+
+        /* Search each record on the block to find the asked value */
+        while ( offset < BLOCK_SIZE ){
+            memcpy(&record, block + offset, sizeof(Record));
+            offset += sizeof(Record);
+
+            /* Find out which record attribute we need to check */
+            if (strcmp(hashKey, "id") == 0){
+                if (record.id == *intValue) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                }
+            }
+            else if (strcmp(hashKey, "name") == 0) {
+                if (strcmp(record.name, stringValue) == 0) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                }
+            }
+            else if (strcmp(hashKey, "surname") == 0) {
+                if (strcmp(record.surname, stringValue) == 0) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                }
+            }
+            else if (strcmp(hashKey, "city") == 0) {
+                if (strcmp(record.city, stringValue) == 0) {
+                    printf("Record found after searching %d blocks\n",blockCounter);
+                    printRecord(&record);
+                    flag = 1;
+                }
+            }
+
+        }
+
+        /* Update myBlockIndex */
+        memcpy(blockInfo, block, sizeof(BlockInfo));
+        myBlockIndex = blockInfo->nextOverflowIndex;
+
+    }while(myBlockIndex != -1);  // If we found it (flag=1) or no more Blocks then end loop
+
+    if (!flag) {
+        printf("We could't find any record with the asked value\n");
+    }
+
+    free(hashTable);
+    free(blockInfo);
+    return 0;
+
    
 }
 

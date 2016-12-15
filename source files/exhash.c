@@ -1027,10 +1027,11 @@ EH_info* EH_OpenIndex(char *fileName) {
 } 
 
 int EH_CloseIndex(EH_info* header_info) {
-
     int * hashTable = getHashTableFromBlock(header_info);
     int hashval;
-    for (int i = 0 ; i < x_to_the_n(2, header_info->depth) ; i++) {
+    int i;
+
+    for (i = 0 ; i < x_to_the_n(2, header_info->depth) ; i++) {
         hashval = hashTable[i];
         printf("\nHashTable[%d] = %d\nPrinting hashed records\n\n", i, hashval);
         fflush(stdout);
@@ -1055,12 +1056,12 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     char *hashKey;           /* The key passed to the hash function */
     unsigned long hashIndex; /* The value returned by the hash function */
     unsigned long newHashIndex;
-    int myBlockIndex, newBlockIndex, i, offset, hashTableBlocks;
+    int myBlockIndex, newBlockIndex, currentBlockIndex, i, offset, hashTableBlocks;
     int buckets = x_to_the_n(2, header_info->depth); /* Initially we have 2^depth buckets */
     int *hashTable;          /* We will bring hashTable to main mem for easier indexing */
     Record tempRecord;
-    int recordsInArray1 = 0, recordsInArray2 = 0;    /* Counter of written records in each array */
-    Record *temp1RecordArray, *temp2RecordArray; /* Arrays of records to store temporary data */
+    int recordsInArray1 = 0, recordsInArray2 = 0; /* Counter of written records in each array */
+    Record *temp1RecordArray, *temp2RecordArray;  /* Arrays of records to store temporary data */
     BlockInfo *blockInfo, *tempBlockInfo;
     void *block;
 
@@ -1123,9 +1124,6 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
      * Insert the entry in block we hashed.
      * If a block is full then double the size of the table (depth++)
      */
-
-    //printf("Bytes in block%d : %d\n", myBlockIndex, blockInfo->bytesInBlock);
-
     if (blockInfo->bytesInBlock + sizeof(Record) <= BLOCK_SIZE) {
         /* Write the record */
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
@@ -1142,7 +1140,6 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     }
     else {
         if (blockInfo->localDepth < header_info->depth) {
-#ifdef _COM_
             /* Case where local_depth < global_depth */
 
             /* Allocate a new block at the end of the file */
@@ -1167,39 +1164,39 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                            header_info->fileDesc, 0);
             }
 
-            /*
-             * Update the block pointers - Increase by one except for the last one
-             * localDepth works as a pointer for the blocks that store the hash table
-             */
+            /* Update the block pointers - Increase by one except for the last one */
             if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
                 BF_PrintError("Error at insertEntry, when getting block: ");
                 return -1;
             }
 
             memcpy(tempBlockInfo, block, sizeof(BlockInfo));
-            if (tempBlockInfo->localDepth != -1) {
-                tempBlockInfo->localDepth += 1;
+            if (tempBlockInfo->nextOverflowIndex != -1) {
+                tempBlockInfo->nextOverflowIndex += 1;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
             }
 
             /* Write back block */
-            if (BF_WriteBlock(header_info->fileDesc, 0) < 0){
+            if (BF_WriteBlock(header_info->fileDesc, 1) < 0){
                 BF_PrintError("Error at insertEntry, when writing block back: ");
                 return -1;
             }
 
-            while (tempBlockInfo->localDepth != -1) {
-                if (BF_ReadBlock(header_info->fileDesc, tempBlockInfo->localDepth, &block) < 0) {
+            while (tempBlockInfo->nextOverflowIndex != -1) {
+                currentBlockIndex = tempBlockInfo->nextOverflowIndex;
+                if (BF_ReadBlock(header_info->fileDesc, currentBlockIndex, &block) < 0) {
                     BF_PrintError("Error at insertEntry, when getting block: ");
                     return -1;
                 }
 
                 memcpy(tempBlockInfo, block, sizeof(BlockInfo));
-                if (tempBlockInfo->localDepth != -1) {
-                    tempBlockInfo->localDepth += 1;
+                if (tempBlockInfo->nextOverflowIndex != -1) {
+                    tempBlockInfo->nextOverflowIndex += 1;
+                    memcpy(block, tempBlockInfo, sizeof(BlockInfo));
                 }
 
                 /* Write back block */
-                if (BF_WriteBlock(header_info->fileDesc, tempBlockInfo->localDepth) < 0){
+                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
                     BF_PrintError("Error at insertEntry, when writing block back: ");
                     return -1;
                 }
@@ -1220,23 +1217,24 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
             offset = sizeof(BlockInfo);
             for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
-                memcpy(&record, block + offset, sizeof(Record));
+                memcpy(&tempRecord, block + offset, sizeof(Record));
 
                 /* Hash each record again */
-                if (strcmp(hashKey, "id") == 0) {}
-                    //newHashIndex = hashInt(record.id);
+                if (strcmp(hashKey, "id") == 0)
+                    newHashIndex = hashInt(tempRecord.id);
                 else if (strcmp(hashKey, "name") == 0)
-                    newHashIndex = hashStr(record.name);
+                    newHashIndex = hashStr(tempRecord.name);
                 else if (strcmp(hashKey, "surname") == 0)
-                    newHashIndex = hashStr(record.surname);
+                    newHashIndex = hashStr(tempRecord.surname);
                 else if (strcmp(hashKey, "city") == 0)
-                    newHashIndex = hashStr(record.city);
+                    newHashIndex = hashStr(tempRecord.city);
+                newHashIndex += 2;
 
                 /* Keep the depth+1 least significant bits */
                 newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
 
                 /* Split the records into two temporary arrays */
-                if (hashIndex <= myBlockIndex) {
+                if (newHashIndex <= myBlockIndex) {
                     memcpy(&temp1RecordArray[recordsInArray1], &record, sizeof(Record));
                     recordsInArray1++;
                 }
@@ -1246,46 +1244,48 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 }
             }
 
-            if (recordsInArray2 == 0 || recordsInArray1 == 0) {/* Overflow Blocks */}
-
-            /* Write temp1RecordArray to block with index myBlockIndex */
-            memcpy(tempBlockInfo, block, sizeof(BlockInfo));
-
-            /* Update block info - Increase localDepth - Write the records */
-            tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray1*sizeof(Record);
-            tempBlockInfo->localDepth = blockInfo->localDepth++;
-            memcpy(block, tempBlockInfo, sizeof(BlockInfo));
-            memcpy(block + sizeof(BlockInfo), temp1RecordArray, recordsInArray1*sizeof(Record));
-
-            /* Write the block back */
-            if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0){
-                BF_PrintError("Error at doubleHashTable, when writing block back a");
-                return -1;
+            if (recordsInArray2 == 0 || recordsInArray1 == 0) {
+                printf("Overflow\n");
             }
+            else {
+                /* Write temp1RecordArray to block with index myBlockIndex */
+                memcpy(tempBlockInfo, block, sizeof(BlockInfo));
 
-            /* Write temp2RecordArray to block with index newBlockIndex */
-            if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
-                BF_PrintError("Error at doubleHashTable, when getting block: ");
-                return -1;
+                /* Update block info - Increase localDepth - Write the records */
+                tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray1*sizeof(Record);
+                tempBlockInfo->localDepth = blockInfo->localDepth++;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                memcpy(block + sizeof(BlockInfo), temp1RecordArray, recordsInArray1*sizeof(Record));
+
+                /* Write the block back */
+                if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0){
+                    BF_PrintError("Error at doubleHashTable, when writing block back a");
+                    return -1;
+                }
+
+                /* Write temp2RecordArray to block with index newBlockIndex */
+                if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at doubleHashTable, when getting block: ");
+                    return -1;
+                }
+
+                memcpy(tempBlockInfo, block, sizeof(BlockInfo));
+
+                /* Initialise block info - Initialise localDepth - Write the records */
+                tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray2*sizeof(Record);
+                tempBlockInfo->localDepth = blockInfo->localDepth++;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                memcpy(block + sizeof(BlockInfo), temp2RecordArray, recordsInArray2*sizeof(Record));
+
+                /* Write the block back */
+                if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0){
+                    BF_PrintError("Error at doubleHashTable, when writing block back a");
+                    return -1;
+                }
+
+                printDebug(header_info->fileDesc, myBlockIndex);
+                printDebug(header_info->fileDesc, newBlockIndex);
             }
-
-            memcpy(tempBlockInfo, block, sizeof(BlockInfo));
-
-            /* Initialise block info - Initialise localDepth - Write the records */
-            tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray2*sizeof(Record);
-            tempBlockInfo->localDepth = blockInfo->localDepth++;
-            memcpy(block, tempBlockInfo, sizeof(BlockInfo));
-            memcpy(block + sizeof(BlockInfo), temp2RecordArray, recordsInArray2*sizeof(Record));
-
-            /* Write the block back */
-            if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0){
-                BF_PrintError("Error at doubleHashTable, when writing block back a");
-                return -1;
-            }
-
-            printDebug(header_info->fileDesc, myBlockIndex);
-            printDebug(header_info->fileDesc, newBlockIndex);
-#endif
         }
         else {
             /* Case where we need to double the hash table in size */

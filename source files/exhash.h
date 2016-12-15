@@ -30,7 +30,7 @@ typedef struct {
 
 /* Hash Functions */
 unsigned long hashStr(char *str);
-int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord);
+int doubleHashTable(EH_info *header_info, int blockIndex, Record *conflictRecord, unsigned long hashIndex4CollisionBlock);
 
 /* Record Functions */
 void printRecord(Record* recordptr);

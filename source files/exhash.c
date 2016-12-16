@@ -1407,6 +1407,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 }
 
                 memcpy(tempBlockInfo, block, sizeof(BlockInfo));
+                tempBlockInfo->localDepth++;
                 tempBlockInfo->nextOverflowIndex = overflowBlockIndex;
                 memcpy(block, tempBlockInfo, sizeof(BlockInfo));
 

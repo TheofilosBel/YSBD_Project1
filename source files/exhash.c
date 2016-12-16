@@ -1103,7 +1103,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
         return -1;
     }
 
-    /* Get hash table in mm*/
+    /* Get hash table in main memory */
     hashTable = getHashTableFromBlock(header_info);
     /* Get the block Index for the record (which is a hashTableValue) */
     myBlockIndex = hashTable[hashIndex-2];
@@ -1124,8 +1124,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
      */
 
     printf("Its depth is %d and global depth is %d\n", blockInfo->localDepth, header_info->depth);
-    //printf("Also in block %d\n", myBlockIndex);
-    //printDebug(header_info->fileDesc,myBlockIndex);
+
     /* Check the block and its overflow blocks*/
     do {
         notFitInBucket = 1;
@@ -1142,24 +1141,26 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 BF_PrintError("Error at insertEntry, when writing block back: ");
                 return -1;
             }
+
             /* It fits in here */
             notFitInBucket = 0;
             break;
         }
+
         /* Read the next block if there is one */
-        if ( blockInfo->nextOverflowIndex != -1 ) {
+        if (blockInfo->nextOverflowIndex != -1) {
             if (BF_ReadBlock(header_info->fileDesc, blockInfo->nextOverflowIndex, &block) < 0) {
                 BF_PrintError("Error at insertEntry, when getting block: ");
                 return -1;
             }
             memcpy(blockInfo, block, sizeof(BlockInfo));
         }
-    }while ( blockInfo->nextOverflowIndex != -1 );
+
+    } while (blockInfo->nextOverflowIndex != -1);
 
     /* If it doesn't fit the split or double*/
     if (notFitInBucket) {
         if (blockInfo->localDepth < header_info->depth) {
-
             printf("-------IN SPLIT-------\n");
             /* Case where local_depth < global_depth */
 
@@ -1227,55 +1228,6 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 }
             }
 
-            /* Add the index of the new block in the hash table */
-            if (BLOCK_SIZE - tempBlockInfo->bytesInBlock >= sizeof(int)) {
-                memcpy(block + tempBlockInfo->bytesInBlock, &newBlockIndex, sizeof(int));
-                tempBlockInfo->bytesInBlock += sizeof(int);
-                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
-
-                /* Write back block */
-                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
-                    BF_PrintError("Error at insertEntry, when writing block back: ");
-                    return -1;
-                }
-            }
-            else {
-                /* Allocate a new block for the hash table at the end of the file */
-                if (BF_AllocateBlock(header_info->fileDesc) < 0) {
-                    BF_PrintError("Error allocating block: ");
-                    return -1;
-                }
-
-                tempBlockInfo->nextOverflowIndex = BF_GetBlockCounter(header_info->fileDesc) - 1;
-                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
-                /* Write back block */
-                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
-                    BF_PrintError("Error at insertEntry, when writing block back: ");
-                    return -1;
-                }
-
-                /* Read the new block */
-                currentBlockIndex = tempBlockInfo->nextOverflowIndex;
-                if (BF_ReadBlock(header_info->fileDesc, currentBlockIndex, &block) < 0) {
-                    BF_PrintError("Error at insertEntry, when getting block: ");
-                    return -1;
-                }
-
-                /* Initialise the block */
-                tempBlockInfo->bytesInBlock = sizeof(BlockInfo);
-                tempBlockInfo->localDepth = 0;
-                tempBlockInfo->nextOverflowIndex = -1;
-                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
-                memcpy(block + tempBlockInfo->bytesInBlock, &newBlockIndex, sizeof(int));
-                tempBlockInfo->bytesInBlock += sizeof(int);
-
-                /* Write back block */
-                if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
-                    BF_PrintError("Error at insertEntry, when writing block back: ");
-                    return -1;
-                }
-            }
-
             /* Split the records of the block with index myBlockIndex into two blocks */
             if (BF_ReadBlock(header_info->fileDesc, myBlockIndex, &block) < 0) {
                 BF_PrintError("Error at insertEntry, when getting block: ");
@@ -1289,7 +1241,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 return -1;
             }
 
-            int oldHashIndex = hashIndex;  // change : prosthesa to oldHashIndex
+            int oldHashIndex = hashIndex;
             offset = sizeof(BlockInfo);
             for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
                 memcpy(&tempRecord, block + offset, sizeof(Record));
@@ -1305,16 +1257,15 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                     newHashIndex = hashStr(tempRecord.city);
                 newHashIndex += 2;
 
-                /* Keep the depth+1 least significant bits */
+                /* Keep the local_depth+1 least significant bits */
                 newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
 
-                // change : debug prints
-                printRecord(&tempRecord);
-                printf("->That hashes in index %ld\n", newHashIndex);
+                //printRecord(&tempRecord);
+                //printf("->That hashes in index %ld\n", newHashIndex);
 
                 /* Split the records into two temporary arrays */
-                if (newHashIndex <= oldHashIndex) {  // change : alla3a to blockIndex me to oldHashIndex pou einai to panw hasIndex
-                    memcpy(&temp1RecordArray[recordsInArray1], &tempRecord, sizeof(Record));  // change : edw egrafes to record kai oxi tempRecord
+                if (newHashIndex <= oldHashIndex) {
+                    memcpy(&temp1RecordArray[recordsInArray1], &tempRecord, sizeof(Record));
                     recordsInArray1++;
                 }
                 else {
@@ -1333,10 +1284,11 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             else if (strcmp(hashKey, "city") == 0)
                 newHashIndex = hashStr(record.city);
             newHashIndex += 2;
+
             /* Keep the depth+1 least significant bits */
             newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
 
-            /* change : Debug printing*/
+            /* change : Debug printing
             int j ;
             printf("\nIn temp 1---------\n");
             for (j = 0 ; j < recordsInArray1 ; j++) {
@@ -1354,6 +1306,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             }
             printf("\n---------\n");
             fflush(stdout);
+            */
 
             /*
              * If array1 has no records and the new record hashes
@@ -1378,13 +1331,13 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
                 /* Write the block back */
                 if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0){
-                    BF_PrintError("Error at doubleHashTable, when writing block back a");
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
                     return -1;
                 }
 
                 /* Write temp2RecordArray to block with index newBlockIndex */
                 if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
-                    BF_PrintError("Error at doubleHashTable, when getting block: ");
+                    BF_PrintError("Error at InsertEntry, when getting block: ");
                     return -1;
                 }
 
@@ -1398,12 +1351,73 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
 
                 /* Write the block back */
                 if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0){
-                    BF_PrintError("Error at doubleHashTable, when writing block back a");
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
                     return -1;
                 }
 
-                printDebug(header_info->fileDesc, myBlockIndex);
-                printDebug(header_info->fileDesc, newBlockIndex);
+                /* Update the block indices in the hash table */
+                int i, index, counter = 2;
+                offset = sizeof(BlockInfo);
+
+                /* Open Block1 */
+                if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
+                    BF_PrintError("Error at InsertEntry, when getting block: ");
+                    return -1;
+                }
+
+                /* Read all the indeces of block 1 and update those needed */
+                while (offset < BLOCK_SIZE) {
+                    memcpy(&index, block + offset, sizeof(int));
+
+                    if (index == myBlockIndex) {
+                        if ((counter & ((1 << (blockInfo->localDepth + 1)) - 1)) > oldHashIndex) {
+                            index = newBlockIndex;
+                            memcpy(block + offset, &index, sizeof(int));
+                        }
+                    }
+
+                    offset += sizeof(int);
+                    counter++;
+                }
+
+                /* Write the Block1 back */
+                if (BF_WriteBlock(header_info->fileDesc, 1) < 0){
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                int blockCounter = BF_GetBlockCounter(header_info->fileDesc);
+                /* Reapeat the process for the hash table blocks at the end of the file */
+                for (i = hashTableBlocks; i > 0; i--) {
+                    if (BF_ReadBlock(header_info->fileDesc, blockCounter - i, &block) < 0) {
+                        BF_PrintError("Error at InsertEntry, when getting block: ");
+                        return -1;
+                    }
+
+                    offset = sizeof(BlockInfo);
+                    while (offset < BLOCK_SIZE) {
+                        memcpy(&index, block + offset, sizeof(int));
+
+                        if (index == myBlockIndex) {
+                            if ((counter & ((1 << (blockInfo->localDepth + 1)) - 1)) > oldHashIndex) {
+                                index = newBlockIndex;
+                                memcpy(block + offset, &index, sizeof(int));
+                            }
+                        }
+
+                        offset += sizeof(int);
+                        counter++;
+                    }
+
+                    /* Write the block back */
+                    if (BF_WriteBlock(header_info->fileDesc, blockCounter - i) < 0){
+                        BF_PrintError("Error at InsertEntry, when writing block back: ");
+                        return -1;
+                    }
+                }
+
+                //printDebug(header_info->fileDesc, myBlockIndex);
+                //printDebug(header_info->fileDesc, newBlockIndex);
             }
             printf("-------Out of SPLIT-------\n");
         }

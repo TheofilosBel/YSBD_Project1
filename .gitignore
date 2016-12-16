@@ -9,3 +9,4 @@ source files/Makefile
 */*hashFile 
 */execHT
 */execEH
+source files/text

@@ -50,6 +50,13 @@ unsigned long hashStr(char *str) {
     return hash;
 }
 
+unsigned long hashInt(unsigned long x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
+}
+
 
 void printDebug(int fileDesc, int blockIndex) {
     BlockInfo tempInfo;
@@ -376,8 +383,8 @@ int HT_InsertEntry(HT_info header_info, Record record) {
 
     /* Chose whether to hash based on an int or a string */
     strcpy(hashKey, header_info.attrName);
-    if (strcmp(hashKey, "id") == 0){}
-        //hashIndex = hashInt(record.id);
+    if (strcmp(hashKey, "id") == 0)
+        hashIndex = hashInt((unsigned long)record.id);
     else if (strcmp(hashKey, "name") == 0)
         hashIndex = hashStr(record.name);
     else if (strcmp(hashKey, "surname") == 0)
@@ -495,8 +502,8 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
 
     /* Chose whether to hash based on an int or a string */
     strcpy(hashKey, header_info.attrName);
-    if (strcmp(hashKey, "id") == 0){}
-        //hashIndex = hashInt(intValue);
+    if (strcmp(hashKey, "id") == 0)
+        hashIndex = hashInt((unsigned long)intValue);
     else if (strcmp(hashKey, "name") == 0)
         hashIndex = hashStr(stringValue);
     else if (strcmp(hashKey, "surname") == 0)

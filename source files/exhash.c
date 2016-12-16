@@ -1410,9 +1410,17 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 tempBlockInfo->nextOverflowIndex = overflowBlockIndex;
                 memcpy(block, tempBlockInfo, sizeof(BlockInfo));
 
-                /* Write back block */
-                if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0) {
-                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                /* Write temp2RecordArray to block newBlockIndex */
+                if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at InsertEntry, when getting block: ");
+                    return -1;
+                }
+
+                memcpy(block + sizeof(BlockInfo), temp2RecordArray, recordsInArray2*sizeof(Record));
+
+                /* Write the block back */
+                if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0){
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
                     return -1;
                 }
 

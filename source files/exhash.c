@@ -1311,13 +1311,205 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             /*
              * If array1 has no records and the new record hashes
              * to the new block too then the new block will overflow
-             * OR
+             */
+            if (recordsInArray1 == 0 && newHashIndex > oldHashIndex) {
+                /* Block myBlockIndex will become empty so we update its info */
+                blockInfo->bytesInBlock = sizeof(BlockInfo);
+                memcpy(block, blockInfo, sizeof(BlockInfo));
+
+                /* Write the block back */
+                if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0){
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                /*
+                 * Allocate a new block at the end of the file to
+                 * use as an overflow block for Block newBlockIndex
+                 */
+                if (BF_AllocateBlock(header_info->fileDesc) < 0) {
+                    BF_PrintError("Error allocating block: ");
+                    return -1;
+                }
+                int overflowBlockIndex = BF_GetBlockCounter(header_info->fileDesc) - 1;
+
+                /* Move each block containing the hash table to their subsequent blocks by one position */
+                for (i = 1; i <= hashTableBlocks; i++) {
+                    copyBlocks(BF_GetBlockCounter(header_info->fileDesc)-1-i,
+                               BF_GetBlockCounter(header_info->fileDesc)-i,
+                               header_info->fileDesc, 0);
+                }
+
+                /* Update overflowBlockIndex since the empty block has been moved */
+                overflowBlockIndex -= hashTableBlocks;
+
+                /* Update the block pointers - Increase by one except for the last one */
+                if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
+                    BF_PrintError("Error at insertEntry, when getting block: ");
+                    return -1;
+                }
+
+                currentBlockIndex = 1;
+                memcpy(tempBlockInfo, block, sizeof(BlockInfo));
+                if (tempBlockInfo->nextOverflowIndex != -1) {
+                    tempBlockInfo->nextOverflowIndex += 1;
+                    memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                }
+
+                /* Write back block */
+                if (BF_WriteBlock(header_info->fileDesc, 1) < 0){
+                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                while (tempBlockInfo->nextOverflowIndex != -1) {
+                    currentBlockIndex = tempBlockInfo->nextOverflowIndex;
+                    if (BF_ReadBlock(header_info->fileDesc, currentBlockIndex, &block) < 0) {
+                        BF_PrintError("Error at insertEntry, when getting block: ");
+                        return -1;
+                    }
+
+                    memcpy(tempBlockInfo, block, sizeof(BlockInfo));
+                    if (tempBlockInfo->nextOverflowIndex != -1) {
+                        tempBlockInfo->nextOverflowIndex += 1;
+                        memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                    }
+
+                    /* Write back block */
+                    if (BF_WriteBlock(header_info->fileDesc, currentBlockIndex) < 0) {
+                        BF_PrintError("Error at insertEntry, when writing block back: ");
+                        return -1;
+                    }
+                }
+
+                /* Write the new record to the overflowBlockIndex */
+                if (BF_ReadBlock(header_info->fileDesc, overflowBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at insertEntry, when getting block: ");
+                    return -1;
+                }
+
+                tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + sizeof(Record);
+                tempBlockInfo->localDepth = blockInfo->localDepth++;
+                tempBlockInfo->nextOverflowIndex = -1;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                memcpy(block + sizeof(BlockInfo), &record, sizeof(Record));
+
+                /* Write back block */
+                if (BF_WriteBlock(header_info->fileDesc, overflowBlockIndex) < 0) {
+                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                /* Update the overflow pointer of newBlockIndex */
+                if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at insertEntry, when getting block: ");
+                    return -1;
+                }
+
+                memcpy(tempBlockInfo, block, sizeof(BlockInfo));
+                tempBlockInfo->nextOverflowIndex = overflowBlockIndex;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+
+                /* Write back block */
+                if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0) {
+                    BF_PrintError("Error at insertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                /* Update the block indices in the hash table */
+                int i, index;
+                offset = sizeof(BlockInfo);
+
+                /* Open Block1 */
+                if (BF_ReadBlock(header_info->fileDesc, 1, &block) < 0) {
+                    BF_PrintError("Error at InsertEntry, when getting block: ");
+                    return -1;
+                }
+
+                /* Read all the indeces of block 1 and update those needed */
+                while (offset < BLOCK_SIZE) {
+                    memcpy(&index, block + offset, sizeof(int));
+
+                    if (index == myBlockIndex) {
+                        index = newBlockIndex;
+                        memcpy(block + offset, &index, sizeof(int));
+                    }
+
+                    offset += sizeof(int);
+                }
+
+                /* Write the Block1 back */
+                if (BF_WriteBlock(header_info->fileDesc, 1) < 0){
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                int blockCounter = BF_GetBlockCounter(header_info->fileDesc);
+                /* Reapeat the process for the hash table blocks at the end of the file */
+                for (i = hashTableBlocks; i > 0; i--) {
+                    if (BF_ReadBlock(header_info->fileDesc, blockCounter - i, &block) < 0) {
+                        BF_PrintError("Error at InsertEntry, when getting block: ");
+                        return -1;
+                    }
+
+                    offset = sizeof(BlockInfo);
+                    while (offset < BLOCK_SIZE) {
+                        memcpy(&index, block + offset, sizeof(int));
+
+                        if (index == myBlockIndex) {
+                            index = newBlockIndex;
+                            memcpy(block + offset, &index, sizeof(int));
+                        }
+
+                        offset += sizeof(int);
+                    }
+
+                    /* Write the block back */
+                    if (BF_WriteBlock(header_info->fileDesc, blockCounter - i) < 0){
+                        BF_PrintError("Error at InsertEntry, when writing block back: ");
+                        return -1;
+                    }
+                }
+            }
+            /*
              * If array2 has no records and the new record hashes
              * to the old block too then the old block will overflow
+             *
+             * In this case we just use block newBlockIndex as an
+             * overflow block for block myBlockIndex
              */
-            if ((recordsInArray1 == 0 && newHashIndex > myBlockIndex) ||
-                (recordsInArray2 == 0 && newHashIndex <= myBlockIndex)) {
-                /* overflow to newBlockIndex */
+            else if (recordsInArray2 == 0 && newHashIndex <= oldHashIndex) {
+                /* Write the new record to newBlockIndex */
+                if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at InsertEntry, when getting block: ");
+                    return -1;
+                }
+
+                tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + sizeof(Record);
+                tempBlockInfo->localDepth = blockInfo->localDepth++;
+                tempBlockInfo->nextOverflowIndex = -1;
+                memcpy(block, tempBlockInfo, sizeof(BlockInfo));
+                memcpy(block + sizeof(BlockInfo), &record, sizeof(Record));
+
+                if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0){
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
+                    return -1;
+                }
+
+                /* Connect myBlockIndex with its overflow block */
+                if (BF_ReadBlock(header_info->fileDesc, myBlockIndex, &block) < 0) {
+                    BF_PrintError("Error at InsertEntry, when getting block: ");
+                    return -1;
+                }
+
+                blockInfo->nextOverflowIndex = newBlockIndex;
+                blockInfo->localDepth++;
+                memcpy(block, blockInfo, sizeof(BlockInfo));
+
+                if (BF_WriteBlock(header_info->fileDesc, myBlockIndex) < 0){
+                    BF_PrintError("Error at InsertEntry, when writing block back: ");
+                    return -1;
+                }
             }
             else {
                 /* Write temp1RecordArray to block with index myBlockIndex */

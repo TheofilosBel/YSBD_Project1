@@ -109,5 +109,7 @@ int main(int argc, char **argv) {
     info = NULL;
      */
 
+    HashStatistics(fileName);
+    
     return 0;
 }

@@ -395,10 +395,6 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % header_info.numBuckets) + 2;
 
-    printf("\nIn insert\n");
-    printRecord(&record);
-    printf("HashIndex is %d\n", hashIndex);
-
     /* Gain access to the bucket with index hashIndex */
     if (BF_ReadBlock(header_info.fileDesc, hashIndex, &block) < 0) {
         BF_PrintError("Error at insertEntry, when getting block: ");
@@ -419,7 +415,6 @@ int HT_InsertEntry(HT_info header_info, Record record) {
      * not equal to -1 then it can't hold any more records so we pass it
      */
     myBlockIndex = hashIndex;
-    printf("Next overflow block is %d , b index %d\n", blockInfo->nextOverflowBlock, myBlockIndex);
     while (blockInfo->nextOverflowBlock != -1) {
         myBlockIndex = blockInfo->nextOverflowBlock;
         /* Gain access to the next overflow block */
@@ -448,8 +443,14 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     }
     else {
         /* Update nextOverflowBlock index of current block */
-        blockInfo->nextOverflowBlock = BF_GetBlockCounter(header_info.fileDesc);
+        blockInfo->nextOverflowBlock = BF_GetBlockCounter(header_info.fileDesc) - 1;
         memcpy(block, blockInfo, sizeof(BlockInfo));
+
+        /* Write back block */
+        if (BF_WriteBlock(header_info.fileDesc, myBlockIndex) < 0){
+            BF_PrintError("Error at insertEntry, when writing block back: ");
+            return -1;
+        }
 
         /* Allocate new overflow block and initialise its info */
         if (BF_AllocateBlock(header_info.fileDesc) < 0) {
@@ -467,9 +468,13 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     
         /* Write the record in the new overflow block */
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
-    }
 
-    printDebug(header_info.fileDesc, myBlockIndex);
+        /* Write back block */
+        if (BF_WriteBlock(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1) < 0){
+            BF_PrintError("Error at insertEntry, when writing block back: ");
+            return -1;
+        }
+    }
 
     free(hashKey);
     free(blockInfo);
@@ -587,8 +592,52 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
 
 
 int HashStatistics(char* filename) {
-    /* Add your code here */
-    
-    return -1;
+    int fileDesc = 0;
+    int hashTableBlocks = 0, sumBlocks = 0; /* Zhtoumeno (a) */
+    int minRecords = 100000, meanRecords = 0, maxRecords = -1; /* Zhtoumeno (b) */
+    int blocksPerBucket = 0; /* Zhtoumeno (c) */
+    int sumOverflowedBuckets = 0, *overflowBlocksPerBucket; /* Zhtoumeno (d) */
+    int buckets, recordsInThisBucket, numBlock;
+    void *block;
+    BlockInfo *blockInfo;
+    char *pch;
+
+    /* Open the file */
+    if ((fileDesc = BF_OpenFile(filename)) < 0) {
+        BF_PrintError("Error at HashStatistics, when opening file: ");
+        return -1;
+    }
+
+    /* Allocate space for blockInfo */
+    if ((blockInfo = malloc(sizeof(BlockInfo))) == NULL) {
+        fprintf(stderr,"Not enough memory\n");
+        return -1;
+    }
+
+    /*
+     * Calculate the blocks we need to store the hash table 
+     * and the number of block indices in the hash table
+     */
+    /* Read block with num 1 */
+    if (BF_ReadBlock(fileDesc, 1, &block) < 0) {
+        BF_PrintError("Error at HashStatistics, when getting block: ");
+        return -1;
+    }
+
+    hashTableBlocks++;
+    memcpy(blockInfo, block, sizeof(BlockInfo));
+    while (blockInfo->nextOverflowBlock != -1) {
+        if (BF_ReadBlock(fileDesc, blockInfo->nextOverflowBlock, &block) < 0) {
+            BF_PrintError("Error at HashStatistics, when getting block: ");
+            return -1;
+        }
+
+        hashTableBlocks++;
+        memcpy(blockInfo, block, sizeof(BlockInfo));
+    }
+
+    free(blockInfo);
+
+    return 0;
     
 }

@@ -658,7 +658,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     }
 #endif
 
-    printf("skata print here\n");
+    printf("After Doubling\n");
     printDebug(header_info->fileDesc, blockIndex);
     printDebug(header_info->fileDesc, newBlockIndex);
 
@@ -788,6 +788,24 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
 
     /* Update the depth in info header and block 0 */
     header_info->depth++;
+    /* Read block with num 0 */
+    if (BF_ReadBlock(header_info->fileDesc, 0, &block) < 0) {
+        BF_PrintError("Error at CreateIndex, when getting block: ");
+        return -1;
+    }
+    /*
+     * Write the HT info to block in the following format:
+     * attrType|attrName|attrLength|buckets$
+     */
+    char buf[256];
+    sprintf(buf, "%c|%s|%d|%d$", header_info->attrType, header_info->attrName,
+            header_info->attrLength, header_info->depth);
+    memcpy(block, buf, sizeof(buf));
+    /* Write the block with num 0 back to BF file */
+    if (BF_WriteBlock(header_info->fileDesc, 0) < 0){
+        BF_PrintError("Error at CreateIndex, when writing block back");
+        return -1;
+    }
 
     printf("\n-------out of DOUBLE-------\n");
 
@@ -1241,7 +1259,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 return -1;
             }
 
-            int oldHashIndex = hashIndex;
+            unsigned long oldHashIndex = hashIndex;
             offset = sizeof(BlockInfo);
             for (; offset < (blockInfo->bytesInBlock - sizeof(BlockInfo)); offset += sizeof(Record)) {
                 memcpy(&tempRecord, block + offset, sizeof(Record));
@@ -1288,7 +1306,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             /* Keep the depth+1 least significant bits */
             newHashIndex = newHashIndex & ((1 << (blockInfo->localDepth + 1)) - 1);
 
-            /* change : Debug printing
+            /* change : Debug printing */
             int j ;
             printf("\nIn temp 1---------\n");
             for (j = 0 ; j < recordsInArray1 ; j++) {
@@ -1306,7 +1324,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
             }
             printf("\n---------\n");
             fflush(stdout);
-            */
+
 
             /*
              * If array1 has no records and the new record hashes
@@ -1521,6 +1539,11 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 }
             }
             else {
+
+                printf("->Before split\n");
+                printDebug(header_info->fileDesc, myBlockIndex);
+                //printDebug(header_info->fileDesc, newBlockIndex);
+
                 /* Write temp1RecordArray to block with index myBlockIndex */
                 memcpy(tempBlockInfo, block, sizeof(BlockInfo));
 
@@ -1547,6 +1570,7 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                 /* Initialise block info - Initialise localDepth - Write the records */
                 tempBlockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray2*sizeof(Record);
                 tempBlockInfo->localDepth = blockInfo->localDepth++;
+                tempBlockInfo->nextOverflowIndex = -1;  // change : -1
                 memcpy(block, tempBlockInfo, sizeof(BlockInfo));
                 memcpy(block + sizeof(BlockInfo), temp2RecordArray, recordsInArray2*sizeof(Record));
 
@@ -1617,9 +1641,13 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
                     }
                 }
 
-                //printDebug(header_info->fileDesc, myBlockIndex);
-                //printDebug(header_info->fileDesc, newBlockIndex);
+                printf("->After split\n");
+                printDebug(header_info->fileDesc, myBlockIndex);
+                printDebug(header_info->fileDesc, newBlockIndex);
             }
+            free(temp1RecordArray);
+            free(temp2RecordArray);
+
             printf("-------Out of SPLIT-------\n");
         }
         else {
@@ -1635,8 +1663,6 @@ int EH_InsertEntry(EH_info* header_info, Record record) {
     free(hashKey);
     free(blockInfo);
     free(tempBlockInfo);
-    //free(temp1RecordArray);
-    //free(temp2RecordArray);
 
     return 0;
 }
@@ -1757,7 +1783,67 @@ int EH_GetAllEntries(EH_info header_info, void *value) {
 
 
 int HashStatistics(char* filename) {
-    /* Add your code here */
+    int blockCounter, hashTableBlocks;
+    int return_value, *hashTable, i, blockIndex;
+    int maxRecords = -1, minRecords = 100000, averageRecords = 0, recordsInBlock ;
+    void *block;
+    EH_info* header_info;
+    BlockInfo blockInfo;
+
+    /* Count the blocks in the file */
+
+    /*Open hash file and take the info header */
+    header_info = EH_OpenIndex(filename);
+    if (header_info == NULL) {
+        fprintf(stderr, "Error in HashStatistics , while opening hash file :%s\n", filename);
+    }
+
+    blockCounter = BF_GetBlockCounter(header_info->fileDesc);
+    printf("-File contains %d blocks :\n", blockCounter);
+    /* Count the blocks needed for the hash table */
+    hashTableBlocks = (x_to_the_n(2, header_info->depth)*sizeof(int) + sizeof(BlockInfo)) / BLOCK_SIZE ;
+    if (((x_to_the_n(2, header_info->depth)*sizeof(int) + sizeof(BlockInfo)) % BLOCK_SIZE) != 0) {  // if we have mod != 0 add 1 more block
+        hashTableBlocks += 1;
+    }
+    printf(" |->%d blocks used for the Hash Table\n", hashTableBlocks);
+    printf(" |->%d blocks used for keeping the records\n", blockCounter - hashTableBlocks);
+
+    /* Average , max , min num of records in a bucket (without the overflow ones)*/
+
+    /* Get the hash table in mm */
+    hashTable = getHashTableFromBlock(header_info);
+    /* Loop through the buckets */
+    for (i = 0 ; i < x_to_the_n(2, header_info->depth) ; i++) {
+        blockIndex = hashTable[i];
+        recordsInBlock = 0;
+        /* Read Block */
+        if (BF_ReadBlock(header_info->fileDesc, blockIndex, &block) < 0) {
+            BF_PrintError("Error at hashStatistic, when getting block: ");
+            return -1;
+        }
+        /* Get the block Info */
+        memcpy(&blockInfo, block, sizeof(BlockInfo));
+        /* Find max and min and average */
+        recordsInBlock = (blockInfo.bytesInBlock - sizeof(blockInfo)) / sizeof(Record);
+        if (recordsInBlock > maxRecords) {
+            maxRecords = recordsInBlock;
+        }
+        if (recordsInBlock < minRecords) {
+            minRecords = recordsInBlock;
+        }
+        averageRecords += recordsInBlock;
+    }
+    averageRecords = averageRecords / x_to_the_n(2, header_info->depth);
+    printf("-Num of blocks in a record :\n");
+    printf(" |->Max num:%d\n", maxRecords);
+    printf(" |->Min num:%d\n", minRecords);
+    printf(" |->Average num:%d\n", averageRecords);
+
+    /*Close hash file*/
+    return_value = EH_CloseIndex(header_info);
+    if (return_value == -1) {
+        fprintf(stderr, "Error in HashStatistics , while closing hash file :%s\n", filename);
+    }
 
     return -1;
    

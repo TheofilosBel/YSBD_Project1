@@ -1039,7 +1039,7 @@ EH_info* EH_OpenIndex(char *fileName) {
     strcpy(hash_info_ptr->attrName, buffer);
 
     char buf[256];
-    sprintf(buf, "%c|%s|%d|%ld$", hash_info_ptr->attrType, buffer, hash_info_ptr->attrLength, hash_info_ptr->numBuckets);
+    sprintf(buf, "%c|%s|%d|%d$", hash_info_ptr->attrType, buffer, hash_info_ptr->attrLength, hash_info_ptr->depth);
     memcpy(block, buf, sizeof(buf));
 
     if (BF_WriteBlock(fileDesc, 0) < 0){

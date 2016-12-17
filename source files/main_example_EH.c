@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
 
     // -- close index
     close_Index(info);
+    HashStatistics(fileName);
 
     /*
     // clean up

@@ -1038,7 +1038,14 @@ EH_info* EH_OpenIndex(char *fileName) {
     hash_info_ptr->attrName = malloc((hash_info_ptr->attrLength +1) * sizeof(char));
     strcpy(hash_info_ptr->attrName, buffer);
 
-    printf("In open index we have : %c|%s|%d|%d\n", hash_info_ptr->attrType, hash_info_ptr->attrName, hash_info_ptr->attrLength, hash_info_ptr->depth);
+    char buf[256];
+    sprintf(buf, "%c|%s|%d|%ld$", hash_info_ptr->attrType, buffer, hash_info_ptr->attrLength, hash_info_ptr->numBuckets);
+    memcpy(block, buf, sizeof(buf));
+
+    if (BF_WriteBlock(fileDesc, 0) < 0){
+        BF_PrintError("Error at CreateIndex, when writing block back");
+        return NULL;
+    }
 
     free(buffer);
     return hash_info_ptr;

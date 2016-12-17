@@ -350,6 +350,15 @@ HT_info* HT_OpenIndex(char *fileName) {
     hash_info_ptr->attrName = malloc((hash_info_ptr->attrLength +1) * sizeof(char));
     strcpy(hash_info_ptr->attrName, buffer);
 
+    char buf[256];
+    sprintf(buf, "%c|%s|%d|%ld$", hash_info_ptr->attrType, buffer, hash_info_ptr->attrLength, hash_info_ptr->numBuckets);
+    memcpy(block, buf, sizeof(buf));
+
+    if (BF_WriteBlock(fileDesc, 0) < 0){
+        BF_PrintError("Error at CreateIndex, when writing block back");
+        return NULL;
+    }
+
     free(buffer);
     return hash_info_ptr;
 } 
@@ -600,13 +609,20 @@ int HashStatistics(char* filename) {
     int buckets, recordsInThisBucket, numBlock;
     void *block;
     BlockInfo *blockInfo;
-    char *pch;
+    HT_info *header_info;
 
     /* Open the file */
     if ((fileDesc = BF_OpenFile(filename)) < 0) {
         BF_PrintError("Error at HashStatistics, when opening file: ");
         return -1;
     }
+
+    if (BF_ReadBlock(fileDesc, 0, &block) < 0) {
+        BF_PrintError("Error at HashStatistics, when getting block: ");
+        return -1;
+    }
+
+    printf("%s\n", block);
 
     /* Allocate space for blockInfo */
     if ((blockInfo = malloc(sizeof(BlockInfo))) == NULL) {

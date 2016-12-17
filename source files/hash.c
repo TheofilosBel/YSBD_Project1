@@ -290,7 +290,7 @@ int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength
             return -1;
         }
     }
-    printDebug(fileDesc, 1);
+
     free(blockInfo);
     return 0;
 }
@@ -373,7 +373,6 @@ int HT_CloseIndex(HT_info* header_info) {
     free(header_info->attrName);
     free(header_info);
 
-    printf("Closed success\n");
     return 0;
 }
 
@@ -557,6 +556,7 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                 if (record.id == *intValue) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
+                    printf("\n");
                     flag = 1;
                 }
             }
@@ -564,6 +564,7 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                 if (strcmp(record.name, stringValue) == 0) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
+                    printf("\n");
                     flag = 1;
                 }
             }
@@ -571,6 +572,7 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                 if (strcmp(record.surname, stringValue) == 0) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
+                    printf("\n");
                     flag = 1;
                 }
             }
@@ -578,6 +580,7 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
                 if (strcmp(record.city, stringValue) == 0) {
                     printf("Record found after searching %d blocks\n",blockCounter);
                     printRecord(&record);
+                    printf("\n");
                     flag = 1;
                 }
             }
@@ -602,32 +605,39 @@ int HT_GetAllEntries(HT_info header_info, void *value) {
 
 int HashStatistics(char* filename) {
     int fileDesc = 0;
-    int hashTableBlocks = 0, sumBlocks = 0; /* Zhtoumeno (a) */
-    int minRecords = 100000, meanRecords = 0, maxRecords = -1; /* Zhtoumeno (b) */
-    int blocksPerBucket = 0; /* Zhtoumeno (c) */
-    int sumOverflowedBuckets = 0, *overflowBlocksPerBucket; /* Zhtoumeno (d) */
-    int buckets, recordsInThisBucket, numBlock;
+    int hashTableBlocks = 0;
+    int minRecords = 100000, averageRecords = 0, maxRecords = -1;
+    int sumOverflowedBuckets = 0, *overflowBlocksPerBucket;
+    int recordsInThisBucket, numBlock;
     void *block;
     BlockInfo *blockInfo;
     HT_info *header_info;
 
-    /* Open the file */
-    if ((fileDesc = BF_OpenFile(filename)) < 0) {
+    printf("==================================================\n");
+    printf("Hash Statistics\n");
+    printf("==================================================\n");
+
+    /* Get the file info */
+    if ((header_info = HT_OpenIndex(filename)) == NULL) {
         BF_PrintError("Error at HashStatistics, when opening file: ");
         return -1;
     }
-
-    if (BF_ReadBlock(fileDesc, 0, &block) < 0) {
-        BF_PrintError("Error at HashStatistics, when getting block: ");
-        return -1;
-    }
-
-    printf("%s\n", block);
 
     /* Allocate space for blockInfo */
     if ((blockInfo = malloc(sizeof(BlockInfo))) == NULL) {
         fprintf(stderr,"Not enough memory\n");
         return -1;
+    }
+
+    /* Allocate space for overflowBlocksPerBucket and initialise it with zeros */
+    overflowBlocksPerBucket = malloc(header_info->numBuckets * sizeof(int));
+    if (overflowBlocksPerBucket == NULL) {
+        printf("Error allocating memory.\n");
+        return -1;
+    }
+
+    for (numBlock = 0; numBlock < header_info->numBuckets; numBlock++) {
+        overflowBlocksPerBucket[numBlock] = 0;
     }
 
     /*
@@ -652,8 +662,67 @@ int HashStatistics(char* filename) {
         memcpy(blockInfo, block, sizeof(BlockInfo));
     }
 
-    free(blockInfo);
+    printf("Blocks used to store the info: 1\n");
+    printf("Blocks are used to store the hash table: %d\n", hashTableBlocks);
+    printf("Blocks are used to store the records: %d\n", BF_GetBlockCounter(header_info->fileDesc)-hashTableBlocks-1);
+    printf("Blocks in total: %d\n\n", BF_GetBlockCounter(header_info->fileDesc));
 
+    for (numBlock = 2; numBlock < 2 + header_info->numBuckets; numBlock++) {
+        recordsInThisBucket = 0;
+
+        if (BF_ReadBlock(fileDesc, numBlock, &block) < 0) {
+            BF_PrintError("Error at HashStatistics, when getting block: ");
+            return -1;
+        }
+
+        memcpy(blockInfo, block, sizeof(BlockInfo));
+        recordsInThisBucket += (blockInfo->bytesInBlock - sizeof(BlockInfo)) / sizeof(Record);
+
+        if (blockInfo->nextOverflowBlock != -1) {
+            sumOverflowedBuckets++;
+        }
+
+        while (blockInfo->nextOverflowBlock != -1) {
+            overflowBlocksPerBucket[numBlock-2]++;
+            if (BF_ReadBlock(fileDesc, blockInfo->nextOverflowBlock, &block) < 0) {
+                BF_PrintError("Error at HashStatistics, when getting block: ");
+                return -1;
+            }
+
+            memcpy(blockInfo, block, sizeof(BlockInfo));
+            recordsInThisBucket += (blockInfo->bytesInBlock - sizeof(BlockInfo)) / sizeof(Record);
+        }
+
+        if (recordsInThisBucket < minRecords) {
+            minRecords = recordsInThisBucket;
+        }
+        if (recordsInThisBucket > maxRecords) {
+            maxRecords = recordsInThisBucket;
+        }
+        averageRecords += recordsInThisBucket;
+    }
+
+    averageRecords = averageRecords / BF_GetBlockCounter(header_info->fileDesc);
+
+    printf("Minimum bucket records: %d\n", minRecords);
+    printf("Maximum bucket records: %d\n", maxRecords);
+    printf("Average bucket records: %d\n\n", averageRecords);
+    printf("Average blocks per bucket: %1.1f\n\n", (double)BF_GetBlockCounter(header_info->fileDesc)/header_info->numBuckets);
+    printf("Buckets that have overflow blocks: %d\n", sumOverflowedBuckets);
+
+    for (numBlock = 0; numBlock < header_info->numBuckets; numBlock++) {
+        if (overflowBlocksPerBucket[numBlock] > 0) {
+            if (overflowBlocksPerBucket[numBlock] == 1) {
+                printf("Bucket with index %3d has %d overflow block.\n", numBlock+2, overflowBlocksPerBucket[numBlock]);
+            }
+            else {
+                printf("Bucket with index %3d has %d overflow blocks.\n", numBlock+2, overflowBlocksPerBucket[numBlock]);
+            }
+        }
+    }
+
+    free(blockInfo);
+    free(overflowBlocksPerBucket);
     return 0;
     
 }

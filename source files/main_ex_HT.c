@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     strcpy(record.name, "john");
     strcpy(record.surname, "Manios");
     strcpy(record.city, "Mpournazi");
-    printRecord(&record);
+    //printRecord(&record);
 
     // -- create index
     char attrName[20];

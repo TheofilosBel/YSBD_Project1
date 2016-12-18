@@ -403,6 +403,7 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     /* We can't enter records in the first two buckets */
     hashIndex = (hashIndex % header_info.numBuckets) + 2;
 
+
     /* Gain access to the bucket with index hashIndex */
     if (BF_ReadBlock(header_info.fileDesc, hashIndex, &block) < 0) {
         BF_PrintError("Error at insertEntry, when getting block: ");
@@ -436,6 +437,7 @@ int HT_InsertEntry(HT_info header_info, Record record) {
     }
 
     if (blockInfo->bytesInBlock + sizeof(Record) <= BLOCK_SIZE) {
+
         /* Write the record */
         memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
         
@@ -450,8 +452,9 @@ int HT_InsertEntry(HT_info header_info, Record record) {
         }
     }
     else {
+
         /* Update nextOverflowBlock index of current block */
-        blockInfo->nextOverflowBlock = BF_GetBlockCounter(header_info.fileDesc) - 1;
+        blockInfo->nextOverflowBlock = BF_GetBlockCounter(header_info.fileDesc);
         memcpy(block, blockInfo, sizeof(BlockInfo));
 
         /* Write back block */
@@ -470,12 +473,12 @@ int HT_InsertEntry(HT_info header_info, Record record) {
             return -1;
         }
 
-        blockInfo->bytesInBlock = sizeof(BlockInfo);
+        blockInfo->bytesInBlock = sizeof(BlockInfo) + sizeof(Record);
         blockInfo->nextOverflowBlock = -1;
         memcpy(block, blockInfo, sizeof(BlockInfo));
-    
+
         /* Write the record in the new overflow block */
-        memcpy(block + blockInfo->bytesInBlock, &record, sizeof(Record));
+        memcpy(block + sizeof(BlockInfo), &record, sizeof(Record));
 
         /* Write back block */
         if (BF_WriteBlock(header_info.fileDesc, BF_GetBlockCounter(header_info.fileDesc)-1) < 0){

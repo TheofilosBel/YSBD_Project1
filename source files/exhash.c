@@ -142,11 +142,6 @@ void printDebug(int fileDesc, int blockIndex) {
 int copyBlocks(int srcIndex, int destIndex, int fileDesc, int zeroSrc) {
     void *temp_src, *temp_dest ;
 
-    temp_dest = malloc(BLOCK_SIZE);
-    temp_src = malloc(BLOCK_SIZE);
-    if (temp_dest == NULL || temp_src == NULL) {
-        fprintf(stderr,"Error at copyBLock : when allocating memory\n");
-    }
 
     /* Read dest and src */
     if (BF_ReadBlock(fileDesc,  destIndex, &temp_dest) < 0) {
@@ -221,16 +216,11 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
 
     /* Allocate memory */
     blockInfo = malloc(sizeof(BlockInfo));
-    if (blockInfo == NULL) {
-        printf("Error allocating memory.\n");
-        return -1;
-    }
     hashKey = malloc((header_info->attrLength + 1) * sizeof(char));
-    if (hashKey == NULL) {
+    if (hashKey == NULL || blockInfo == NULL) {
         printf("Error allocating memory.\n");
         return -1;
     }
-
 
     /* Allocate one new block ,that we sure need for the
      * hash table (to write ints), or to write new records
@@ -337,7 +327,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     memcpy(blockInfo, block, sizeof(BlockInfo));
     
     /* Find out how mane overflow block does it have */
-    sizeOftemparray = BLOCK_SIZE - sizeof(BlockInfo);
+    sizeOftemparray = BLOCK_SIZE - sizeof(BlockInfo) + sizeof(Record);  // the + is for the collision record in case of overflow
     while (blockInfo->nextOverflowIndex != -1) {
         sizeOftemparray += BLOCK_SIZE - sizeof(BlockInfo);
         /* Read the next block */
@@ -354,6 +344,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     /**/
     temp1RecordArray = malloc((size_t)sizeOftemparray);
     temp2RecordArray = malloc((size_t)sizeOftemparray);
+    printf("pointers are 1:%p 2:%p\n", temp1RecordArray, temp2RecordArray);
     if (temp1RecordArray == NULL || temp2RecordArray == NULL) {
         printf("Error allocating memory.\n");
         return -1;
@@ -462,6 +453,8 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     /* If records hash in one index only, create overflow block*/
     if ( recordsInArray1 == 0 || recordsInArray2 == 0 ) {
         printf("skatooles");
+        fflush(stdout);
+
         /* Update block info - nextOverflowBlock */
         memcpy(blockInfo, block, sizeof(BlockInfo));
         blockInfo->nextOverflowIndex = newBlockIndex;  // used the newly allocated block as the overflow block
@@ -494,8 +487,16 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
             BF_PrintError("Error at doubleHashTable, when writing block back a");
             return -1;
         }
-        printDebug(header_info->fileDesc,blockIndex);
+        //printDebug(header_info->fileDesc,blockIndex);
 
+        printf("pointers are 1:%p 2:%p\n", temp1RecordArray, temp2RecordArray);
+        printf("Sizes are 1:%d 2:%d and %d\n", recordsInArray1*sizeof(Record), recordsInArray2*sizeof(Record), sizeOftemparray);
+        fflush(stdout);
+
+        free(hashKey);
+        free(blockInfo);
+        free(temp2RecordArray);
+        free(temp1RecordArray);
         return 0;
     }
 
@@ -618,53 +619,12 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
         }
     } while (blockInfo->nextOverflowIndex != -1);
 
-
-#ifdef nooverflow
-    memcpy(block, zeroArray, BLOCK_SIZE); /* Overwrite the block's data - Initialise with zeros */
-
-    /* Update block info - Increase localDepth - Write the records */
-    blockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray1*sizeof(Record);
-    blockInfo->localDepth++;
-    blockInfo->nextOverflowIndex = -1;
-    memcpy(block, blockInfo, sizeof(BlockInfo));
-    memcpy(block + sizeof(BlockInfo), temp1RecordArray, recordsInArray1*sizeof(Record));
-
-    /* Write the block back */
-    if (BF_WriteBlock(header_info->fileDesc, blockIndex) < 0){
-        BF_PrintError("Error at doubleHashTable, when writing block back a");
-        return -1;
-    }
-
-    /* Write temp2RecordArray to block with index newBlockIndex */
-    if (BF_ReadBlock(header_info->fileDesc, newBlockIndex, &block) < 0) {
-        BF_PrintError("Error at doubleHashTable, when getting block: ");
-        return -1;
-    }
-
-    memcpy(blockInfo, block, sizeof(BlockInfo));
-    memcpy(block, zeroArray, BLOCK_SIZE); /* Overwrite the block's data - Initialise with zeros */
-
-    /* Initialise block info - Initialise localDepth - Write the records */
-    blockInfo->bytesInBlock = sizeof(BlockInfo) + recordsInArray2*sizeof(Record);
-    blockInfo->localDepth = header_info->depth + 1;
-    blockInfo->nextOverflowIndex = -1;
-    memcpy(block, blockInfo, sizeof(BlockInfo));
-    memcpy(block + sizeof(BlockInfo), temp2RecordArray, recordsInArray2*sizeof(Record));
-
-    /* Write the block back */
-    if (BF_WriteBlock(header_info->fileDesc, newBlockIndex) < 0){
-        BF_PrintError("Error at doubleHashTable, when writing block back a");
-        return -1;
-    }
-#endif
-
     printf("After Doubling\n");
-    printDebug(header_info->fileDesc, blockIndex);
-    printDebug(header_info->fileDesc, newBlockIndex);
+    //printDebug(header_info->fileDesc, blockIndex);
+    //printDebug(header_info->fileDesc, newBlockIndex);
 
     free(temp1RecordArray);
     free(temp2RecordArray);
-    fflush(stdout);
 
     /* Updating the pointers !!! Assuming depth is the old depth
      * Each pointer until 2^depth is the same as before
@@ -687,7 +647,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     memcpy(blockInfo, block, sizeof(BlockInfo));
 
     /* Get the hash Table in memory*/
-    int * hashTable;
+    int *hashTable;
     hashTable = getHashTableFromBlock(header_info);
 
     /* Calculate how many more blocks we need for the doubling of the hash table */
@@ -783,8 +743,8 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
         }
     }
 
-    printf("Hash[178] = %d and Hash[178+2^depth] = %d\n", hashTable[178], hashTable[178+oldBuckets]);
-    printDebug(header_info->fileDesc, 1);
+    //printf("Hash[178] = %d and Hash[178+2^depth] = %d\n", hashTable[178], hashTable[178+oldBuckets]);
+    //printDebug(header_info->fileDesc, 1);
 
     /* Update the depth in info header and block 0 */
     header_info->depth++;
@@ -813,7 +773,7 @@ int doubleHashTable(EH_info *header_info, int blockIndex, Record *collisionRecor
     free(hashKey);
     free(blockInfo);
 
-    return 1;
+    return 0;
 }
 
 /*----------------------END----------------------------*/
@@ -1782,6 +1742,7 @@ int EH_GetAllEntries(EH_info header_info, void *value) {
     }
 
     free(hashTable);
+    free(hashKey);
     free(blockInfo);
     return 0;
 
@@ -1831,7 +1792,7 @@ int HashStatistics(char* filename) {
         /* Get the block Info */
         memcpy(&blockInfo, block, sizeof(BlockInfo));
         /* Find max and min and average */
-        recordsInBlock = (blockInfo.bytesInBlock - sizeof(blockInfo)) / sizeof(Record);
+        recordsInBlock = (blockInfo.bytesInBlock - sizeof(BlockInfo)) / sizeof(Record);
         if (recordsInBlock > maxRecords) {
             maxRecords = recordsInBlock;
         }
@@ -1852,6 +1813,6 @@ int HashStatistics(char* filename) {
         fprintf(stderr, "Error in HashStatistics , while closing hash file :%s\n", filename);
     }
 
-    return -1;
-   
+    free(hashTable);
+    return 0;
 }
